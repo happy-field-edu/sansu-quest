@@ -3,7 +3,7 @@ import type { WorldId } from './types'
 import { GameProvider } from './game/store'
 import Title from './screens/Title'
 import WorldSelect from './screens/WorldSelect'
-import WorldMap from './screens/WorldMap'
+import Field3D from './field/Field3D'
 import Battle from './screens/Battle'
 import Equip from './screens/Equip'
 
@@ -29,7 +29,8 @@ export default function App() {
           />
         )}
         {screen.name === 'map' && (
-          <WorldMap
+          <Field3D
+            key={screen.worldId}
             worldId={screen.worldId}
             onBack={() => setScreen({ name: 'worlds' })}
             onEquip={() => setScreen({ name: 'equip', from: screen })}
