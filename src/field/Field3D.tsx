@@ -3,12 +3,39 @@ import { Canvas } from '@react-three/fiber'
 import HiddenPaneDriver, { useHiddenPaneResizeKick } from './HiddenPaneDriver'
 import type { WorldId } from '../types'
 import { useGame } from '../game/store'
-import { playerStats, BOSS_BASE, BOSS_MIN } from '../game/logic'
+import { playerStats, skillLevelOf, BOSS_BASE, BOSS_MIN, type SkillLevel } from '../game/logic'
 import { WORLD_BY_ID, STAGE_BY_ID } from '../data/worlds'
 import { ITEMS } from '../data/items'
-import { skillNames } from '../data/generators'
+import { SKILLS } from '../data/generators'
+import { sfx } from '../game/sound'
+import SoundToggle from '../components/SoundToggle'
+import TouchStick from './TouchStick'
 import { ZONES } from './config'
 import Scene, { maxZoneOf } from './Scene'
+
+// 習熟度べつのチップ色（記録がたまると緑/黄/赤にかわる）
+const CHIP_CLS: Record<SkillLevel, string> = {
+  none: 'bg-cyan-500/15 text-cyan-300',
+  good: 'bg-emerald-500/20 text-emerald-300',
+  mid: 'bg-amber-500/20 text-amber-300',
+  weak: 'bg-red-500/25 text-red-300',
+}
+
+function SkillChips({ stageId, stats }: { stageId: string; stats: Record<string, { o: number; x: number }> }) {
+  return (
+    <>
+      {(SKILLS[stageId] ?? []).map((s) => {
+        const { level } = skillLevelOf(stats, stageId, s.id)
+        return (
+          <span key={s.id} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${CHIP_CLS[level]}`}>
+            {level === 'weak' ? '⚠️' : level === 'good' ? '✓' : ''}
+            {s.name}
+          </span>
+        )
+      })}
+    </>
+  )
+}
 
 interface Encounter {
   stageId: string
@@ -56,7 +83,10 @@ export default function Field3D({
           worldId={worldId}
           save={save}
           paused={encounter !== null || bossPrep !== null}
-          onEncounter={(stageId, mode) => setEncounter({ stageId, mode })}
+          onEncounter={(stageId, mode) => {
+            sfx.encounter()
+            setEncounter({ stageId, mode })
+          }}
           onBossContact={(stageId) => setBossPrep(stageId)}
           onZoneChange={setZone}
         />
@@ -80,12 +110,15 @@ export default function Field3D({
               <span className="font-bold text-yellow-300"> → {stats.bossRequired}問</span>
             </p>
           </div>
-          <button
-            onClick={onEquip}
-            className="btn-game pointer-events-auto rounded-xl bg-indigo-600 px-3 py-2 text-sm font-bold shadow-[0_3px_0_#312e81]"
-          >
-            🎒 そうび
-          </button>
+          <div className="flex items-start gap-2">
+            <SoundToggle />
+            <button
+              onClick={onEquip}
+              className="btn-game pointer-events-auto rounded-xl bg-indigo-600 px-3 py-2 text-sm font-bold shadow-[0_3px_0_#312e81]"
+            >
+              🎒 そうび
+            </button>
+          </div>
         </div>
 
         {/* いまいるゾーンの情報（予習パネル表示中はかくす） */}
@@ -97,12 +130,15 @@ export default function Field3D({
             <p className="text-sm font-bold text-slate-100">{zoneStage.title}</p>
             <p className="mt-1 text-xs leading-relaxed text-cyan-200">🔗 {zoneStage.link}</p>
             <div className="mt-1.5 flex flex-wrap gap-1">
-              {skillNames(zoneStage.id).map((n) => (
-                <span key={n} className="rounded bg-cyan-500/15 px-1.5 py-0.5 text-[10px] font-bold text-cyan-300">
-                  {n}
-                </span>
-              ))}
+              <SkillChips stageId={zoneStage.id} stats={save.skillStats} />
             </div>
+          </div>
+        )}
+
+        {/* バーチャルスティック（iPad・タッチ用） */}
+        {!bossPrep && (
+          <div className="absolute right-5 bottom-24">
+            <TouchStick />
           </div>
         )}
 
@@ -153,16 +189,22 @@ export default function Field3D({
               </p>
             </div>
 
-            {/* テストにでる技能（ミニ評価基準表） */}
+            {/* テストにでる技能（ミニ評価基準表・記録があれば色分け） */}
             <div className="mt-3 rounded-xl bg-slate-800 p-3">
               <p className="text-xs text-slate-400">📋 ボステストに でる力（ぜんぶ まぜて 出題されるよ）</p>
               <div className="mt-1.5 flex flex-wrap gap-1">
-                {skillNames(prepStage.id).map((n) => (
-                  <span key={n} className="rounded bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">
-                    {n}
-                  </span>
-                ))}
+                <SkillChips stageId={prepStage.id} stats={save.skillStats} />
               </div>
+              {(() => {
+                const weak = (SKILLS[prepStage.id] ?? []).filter(
+                  (s) => skillLevelOf(save.skillStats, prepStage.id, s.id).level === 'weak',
+                )
+                return weak.length > 0 ? (
+                  <p className="mt-1.5 text-xs font-bold text-red-300">
+                    ⚠️ にがて：{weak.map((s) => s.name).join('・')}　→ よしゅうバトルで きたえよう！
+                  </p>
+                ) : null
+              })()}
             </div>
 
             {/* 予習のヒント */}

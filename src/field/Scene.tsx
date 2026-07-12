@@ -6,6 +6,7 @@ import type { SaveData, Stage, WorldId } from '../types'
 import { WORLD_BY_ID } from '../data/worlds'
 import Monster from './Monster'
 import { HeroModel } from './Hero'
+import { stick } from './input'
 import {
   FIELD_HALF_W,
   FIELD_THEMES,
@@ -366,13 +367,17 @@ export default function Scene({ worldId, save, paused, onEncounter, onBossContac
       if (k.has('s') || k.has('arrowdown')) dz += 1
       if (k.has('a') || k.has('arrowleft')) dx -= 1
       if (k.has('d') || k.has('arrowright')) dx += 1
+      // バーチャルスティック（iPad用）の入力を合成
+      dx += stick.x
+      dz += stick.z
       const len = Math.hypot(dx, dz)
-      if (len > 0) {
+      if (len > 0.18) {
         hasMoved.current = true
+        const speed = PLAYER_SPEED * Math.min(len, 1) // スティックのかたむきで速さがかわる
         dx /= len
         dz /= len
-        pos.x += dx * PLAYER_SPEED * dt
-        pos.z += dz * PLAYER_SPEED * dt
+        pos.x += dx * speed * dt
+        pos.z += dz * speed * dt
         if (playerInner.current) {
           playerInner.current.rotation.y = Math.atan2(dx, dz)
           playerInner.current.position.y = Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.12

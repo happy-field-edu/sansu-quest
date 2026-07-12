@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useGame } from '../game/store'
 import { playerStats, BOSS_BASE } from '../game/logic'
 import { WORLDS } from '../data/worlds'
+import Records from './Records'
+import SoundToggle from '../components/SoundToggle'
 import type { WorldId } from '../types'
 
 export default function WorldSelect({
@@ -14,6 +17,7 @@ export default function WorldSelect({
 }) {
   const { save } = useGame()
   const stats = playerStats(save)
+  const [showRecords, setShowRecords] = useState(false)
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
@@ -23,13 +27,23 @@ export default function WorldSelect({
           ◀ タイトル
         </button>
         <h1 className="font-dot text-xl text-yellow-300">ワールドマップ</h1>
-        <button
-          onClick={onEquip}
-          className="btn-game rounded-xl bg-indigo-600 px-3 py-1.5 text-sm font-bold shadow-[0_3px_0_#312e81]"
-        >
-          🎒 そうび
-        </button>
+        <div className="flex items-center gap-2">
+          <SoundToggle />
+          <button
+            onClick={() => setShowRecords(true)}
+            className="btn-game rounded-xl bg-slate-700 px-3 py-1.5 text-sm font-bold shadow-[0_3px_0_#1e293b]"
+          >
+            📊 きろく
+          </button>
+          <button
+            onClick={onEquip}
+            className="btn-game rounded-xl bg-indigo-600 px-3 py-1.5 text-sm font-bold shadow-[0_3px_0_#312e81]"
+          >
+            🎒 そうび
+          </button>
+        </div>
       </div>
+      {showRecords && <Records onClose={() => setShowRecords(false)} />}
 
       {/* ゆうしゃステータスカード */}
       <div className="mb-6 rounded-2xl border-2 border-indigo-500/40 bg-slate-900/80 p-4">

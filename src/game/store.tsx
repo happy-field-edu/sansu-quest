@@ -5,7 +5,7 @@ import { STAGE_BY_ID } from '../data/worlds'
 
 const SAVE_KEY = 'sansu-quest-save-v1'
 
-const initialSave: SaveData = { exp: 0, items: [], equipped: {}, practiced: [], cleared: [] }
+const initialSave: SaveData = { exp: 0, items: [], equipped: {}, practiced: [], cleared: [], skillStats: {} }
 
 export type Action =
   | { type: 'gain-exp'; amount: number }
@@ -13,6 +13,7 @@ export type Action =
   | { type: 'boss-clear'; stageId: string; exp: number }
   | { type: 'equip'; itemId: string }
   | { type: 'unequip'; slot: keyof SaveData['equipped'] }
+  | { type: 'record-skill'; stageId: string; skillId: string; correct: boolean }
   | { type: 'reset' }
 
 function reducer(s: SaveData, a: Action): SaveData {
@@ -48,6 +49,13 @@ function reducer(s: SaveData, a: Action): SaveData {
       const equipped = { ...s.equipped }
       delete equipped[a.slot]
       return { ...s, equipped }
+    }
+    case 'record-skill': {
+      // 技能ごとの正誤を記録（弱点の可視化・優先出題に使う）
+      const key = `${a.stageId}:${a.skillId}`
+      const cur = s.skillStats[key] ?? { o: 0, x: 0 }
+      const next = a.correct ? { ...cur, o: cur.o + 1 } : { ...cur, x: cur.x + 1 }
+      return { ...s, skillStats: { ...s.skillStats, [key]: next } }
     }
     case 'reset':
       return initialSave

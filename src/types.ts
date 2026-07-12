@@ -44,6 +44,13 @@ export interface Problem {
   choices: string[]
   answer: number // 正解の choices インデックス
   skill?: string // この問題がみがく技能名（数直線・大小くらべ など）
+  skillId?: string // 正誤記録用の技能ID
+}
+
+// 技能ごとの正誤記録（o=正解数, x=まちがい数）。キーは `${stageId}:${skillId}`
+export interface SkillStat {
+  o: number
+  x: number
 }
 
 export interface SaveData {
@@ -52,4 +59,5 @@ export interface SaveData {
   equipped: Partial<Record<Slot, string>>
   practiced: string[] // れんしゅうバトルをクリアしたステージ（装備入手ずみ）
   cleared: string[] // ボスをたおしたステージ
+  skillStats: Record<string, SkillStat> // 技能べつの正誤記録
 }

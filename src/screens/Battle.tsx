@@ -13,6 +13,8 @@ import { ITEMS } from '../data/items'
 import { genProblem } from '../data/generators'
 import MemoPad from '../components/MemoPad'
 import BattleHero from './BattleHero'
+import SoundToggle from '../components/SoundToggle'
+import { sfx } from '../game/sound'
 import type { Item, Problem } from '../types'
 
 type Phase = 'fight' | 'win' | 'lose'
@@ -38,7 +40,9 @@ export default function Battle({
 
   const [hp, setHp] = useState(startStats.maxHp)
   const [progress, setProgress] = useState(0)
-  const [problem, setProblem] = useState<Problem>(() => genProblem(stageId))
+  // れんしゅうは苦手技能を優先出題、ボスは全技能を均等に（まとめテスト）
+  const nextProblem = () => (isBoss ? genProblem(stageId) : genProblem(stageId, save.skillStats))
+  const [problem, setProblem] = useState<Problem>(nextProblem)
   const [phase, setPhase] = useState<Phase>('fight')
   const [selected, setSelected] = useState<number | null>(null)
   const [fx, setFx] = useState<'none' | 'hit' | 'miss'>('none')
@@ -68,6 +72,11 @@ export default function Battle({
     }
     setResult({ levelBefore, levelAfter, exp: totalExp, drop })
     setPhase(won ? 'win' : 'lose')
+    if (won) {
+      if (levelAfter > levelBefore) sfx.levelup()
+      else sfx.victory()
+      if (drop) sfx.drop()
+    }
   }
 
   function answer(i: number) {
@@ -75,7 +84,10 @@ export default function Battle({
     setSelected(i)
     const correct = i === problem.answer
     setFx(correct ? 'hit' : 'miss')
+    // 技能べつの正誤を記録（きろく画面・弱点優先出題のもと）
+    if (problem.skillId) dispatch({ type: 'record-skill', stageId, skillId: problem.skillId, correct })
     if (correct) {
+      sfx.correct()
       setSwingId((s) => s + 1)
       expRef.current += EXP_CORRECT
       setExpShown(expRef.current)
@@ -85,19 +97,20 @@ export default function Battle({
         if (next >= target) {
           finish(true)
         } else {
-          setProblem(genProblem(stageId))
+          setProblem(nextProblem())
           setSelected(null)
           setFx('none')
         }
       }, 650)
     } else {
+      sfx.wrong()
       const newHp = hp - startStats.mistakeDamage
       window.setTimeout(() => {
         setHp(newHp)
         if (newHp <= 0) {
           finish(false)
         } else {
-          setProblem(genProblem(stageId))
+          setProblem(nextProblem())
           setSelected(null)
           setFx('none')
         }
@@ -124,7 +137,10 @@ export default function Battle({
         >
           {isBoss ? `👑 大ボスせん` : '⚔️ れんしゅうバトル'}
         </span>
-        <span className="text-sm text-yellow-300">EXP +{expShown}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-yellow-300">EXP +{expShown}</span>
+          <SoundToggle />
+        </div>
       </div>
 
       {/* ゆうしゃ vs てき */}

@@ -1024,10 +1024,35 @@ export function skillNames(stageId: string): string[] {
   return (SKILLS[stageId] ?? []).map((s) => s.name)
 }
 
-// ランダムな技能から1問生成（ボス戦は全技能まぜこぜの「まとめテスト」になる）
-export function genProblem(stageId: string): Problem {
+// 1問生成する。
+// stats（技能べつ正誤記録）を渡すと、まちがいが多い技能・まだやっていない技能を
+// 優先して出題する（れんしゅうバトル用）。渡さなければ全技能を均等に出す（ボス用）。
+export function genProblem(stageId: string, stats?: Record<string, { o: number; x: number }>): Problem {
   const skills = SKILLS[stageId]
   if (!skills || skills.length === 0) throw new Error(`no skills for ${stageId}`)
-  const skill = skills[Math.floor(Math.random() * skills.length)]
-  return { ...skill.gen(), skill: skill.name }
+  let skill: Skill
+  if (stats) {
+    const weights = skills.map((s) => {
+      const st = stats[`${stageId}:${s.id}`]
+      const o = st?.o ?? 0
+      const x = st?.x ?? 0
+      const n = o + x
+      const errRate = n === 0 ? 0.5 : x / n // 未挑戦の技能もやや優先
+      return 1 + errRate * 2.5 // まちがい率が高いほど出やすい（最大3.5倍）
+    })
+    const total = weights.reduce((a, b) => a + b, 0)
+    let r = Math.random() * total
+    let idx = 0
+    for (let i = 0; i < weights.length; i++) {
+      r -= weights[i]
+      if (r <= 0) {
+        idx = i
+        break
+      }
+    }
+    skill = skills[idx]
+  } else {
+    skill = skills[Math.floor(Math.random() * skills.length)]
+  }
+  return { ...skill.gen(), skill: skill.name, skillId: skill.id }
 }

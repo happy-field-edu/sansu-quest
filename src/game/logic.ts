@@ -45,6 +45,22 @@ export function playerStats(save: SaveData) {
   }
 }
 
+// ---- 技能の習熟度（きろく画面・チップの色分けに使う） ----
+export type SkillLevel = 'none' | 'good' | 'mid' | 'weak'
+
+export function skillLevelOf(
+  stats: SaveData['skillStats'],
+  stageId: string,
+  skillId: string,
+): { level: SkillLevel; o: number; x: number } {
+  const st = stats[`${stageId}:${skillId}`]
+  const o = st?.o ?? 0
+  const x = st?.x ?? 0
+  if (o + x < 3) return { level: 'none', o, x } // 3問未満は判定しない
+  const acc = o / (o + x)
+  return { level: acc >= 0.8 ? 'good' : acc >= 0.6 ? 'mid' : 'weak', o, x }
+}
+
 // ---- バトル定数 ----
 export const PRACTICE_HP = 5 // れんしゅうモンスターは 5問正解でクリア
 export const EXP_CORRECT = 4 // 1問正解ごとの経験値
