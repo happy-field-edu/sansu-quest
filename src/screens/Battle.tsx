@@ -11,6 +11,8 @@ import {
 import { STAGE_BY_ID } from '../data/worlds'
 import { ITEMS } from '../data/items'
 import { genProblem } from '../data/generators'
+import MemoPad from '../components/MemoPad'
+import BattleHero from './BattleHero'
 import type { Item, Problem } from '../types'
 
 type Phase = 'fight' | 'win' | 'lose'
@@ -40,6 +42,7 @@ export default function Battle({
   const [phase, setPhase] = useState<Phase>('fight')
   const [selected, setSelected] = useState<number | null>(null)
   const [fx, setFx] = useState<'none' | 'hit' | 'miss'>('none')
+  const [swingId, setSwingId] = useState(0) // 増えるたびに3Dゆうしゃが武器を振る
   const expRef = useRef(0)
   const [expShown, setExpShown] = useState(0)
   const [result, setResult] = useState<{ levelBefore: number; levelAfter: number; exp: number; drop: Item | null }>({
@@ -73,6 +76,7 @@ export default function Battle({
     const correct = i === problem.answer
     setFx(correct ? 'hit' : 'miss')
     if (correct) {
+      setSwingId((s) => s + 1)
       expRef.current += EXP_CORRECT
       setExpShown(expRef.current)
       const next = progress + 1
@@ -123,14 +127,32 @@ export default function Battle({
         <span className="text-sm text-yellow-300">EXP +{expShown}</span>
       </div>
 
-      {/* てき */}
-      <div className="mt-4 text-center">
+      {/* ゆうしゃ vs てき */}
+      <div className="mt-2 text-center">
         <p className="font-dot text-lg text-slate-200">
           {isBoss ? stage.bossName : stage.enemyName}
           <span className="ml-2 text-xs text-slate-400">（{stage.grade}年生・{stage.title}）</span>
         </p>
-        <div className={`my-2 inline-block ${fx === 'hit' ? 'anim-hit' : 'anim-floaty'} ${isBoss ? 'text-8xl' : 'text-7xl'}`}>
-          {isBoss ? stage.bossEmoji : stage.enemyEmoji}
+        <div className="flex items-end justify-center gap-1">
+          {/* 3Dゆうしゃ（正解で武器を振る） */}
+          <BattleHero weaponId={save.equipped['ぶき']} shieldId={save.equipped['たて']} swingSignal={swingId} />
+          <div className="relative pb-4">
+            <div className={`inline-block ${fx === 'hit' ? 'anim-hit' : 'anim-floaty'} ${isBoss ? 'text-8xl' : 'text-7xl'}`}>
+              {isBoss ? stage.bossEmoji : stage.enemyEmoji}
+            </div>
+            {/* 斬撃エフェクト */}
+            {fx === 'hit' && (
+              <>
+                <div className="anim-flashfx pointer-events-none absolute inset-0 rounded-full bg-white" />
+                <div className="anim-slash pointer-events-none absolute top-1/2 left-1/2 h-2.5 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-transparent via-white to-transparent" />
+                <div
+                  className="anim-slash pointer-events-none absolute top-1/2 left-1/2 h-1.5 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-transparent via-yellow-200 to-transparent"
+                  style={{ animationDelay: '0.08s' }}
+                />
+                <div className="anim-rise pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 text-3xl">💥</div>
+              </>
+            )}
+          </div>
         </div>
         {fx === 'hit' && <div className="anim-rise font-dot text-2xl font-bold text-yellow-300">せいかい！ ⚡</div>}
         {fx === 'miss' && (
@@ -170,6 +192,13 @@ export default function Battle({
       {/* もんだいカード */}
       <div className="mt-5 flex-1">
         <div className="rounded-2xl border-2 border-indigo-400/50 bg-slate-900/90 p-5">
+          {problem.skill && (
+            <p className="mb-2 text-center">
+              <span className="rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-bold text-cyan-300">
+                🎯 めあて：{problem.skill}
+              </span>
+            </p>
+          )}
           <p className="text-center text-xl leading-relaxed font-bold whitespace-pre-line">{problem.text}</p>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -192,6 +221,8 @@ export default function Battle({
             )
           })}
         </div>
+        {/* 筆算用の手書きメモ（問題がかわると自動でリセット） */}
+        <MemoPad resetKey={problem} />
         {isBoss && (
           <p className="mt-3 text-center text-xs text-slate-400">
             レベルとそうびのおかげで 50問 → {target}問 になっている！

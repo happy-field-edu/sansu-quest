@@ -43,6 +43,7 @@ export interface Problem {
   text: string
   choices: string[]
   answer: number // 正解の choices インデックス
+  skill?: string // この問題がみがく技能名（数直線・大小くらべ など）
 }
 
 export interface SaveData {
