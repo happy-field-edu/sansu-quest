@@ -133,6 +133,61 @@ body {
   animation: sparkle 2.2s linear infinite;
 }
 
+/* ---- ドラクエ風ウィンドウ ---- */
+.dq-win {
+  background: rgba(2, 4, 18, 0.94);
+  border: 3px solid #fff;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 2px #0a0a1e,
+    inset 0 0 0 1px #0a0a1e;
+  color: #fff;
+}
+
+.dq-frame {
+  border: 3px solid #fff;
+  border-radius: 6px;
+  box-shadow: 0 0 0 3px #0a0a1e;
+}
+
+@keyframes dqBlink {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.15;
+  }
+}
+.dq-cursor-blink {
+  animation: dqBlink 0.8s steps(1) infinite;
+}
+
+/* エンカウント：白黒フラッシュ（ドラクエ風） */
+@keyframes dqEncounter {
+  0%,
+  20%,
+  40% {
+    background: #fff;
+  }
+  10%,
+  30%,
+  50% {
+    background: #000;
+  }
+  60% {
+    background: #fff;
+  }
+  100% {
+    background: #000;
+  }
+}
+.dq-encounter {
+  animation: dqEncounter 0.8s steps(1) both;
+  z-index: 20;
+}
+
 /* ---- エンカウント演出 ---- */
 @keyframes encFlash {
   0% {

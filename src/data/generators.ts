@@ -1,4 +1,5 @@
 import type { Problem } from '../types'
+import { BANK } from './bank'
 
 // 各単元を評価規準ベースの「技能」に細分化し、技能ごとに問題を生成する。
 // 例）2年「長さとかさ」→ たんい変換 / かさのたんい / 長さの計算 / 大小くらべ / たんいえらび
@@ -16,6 +17,27 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+// 正解の書式（単位・記号・小数のけた数）を保ったまま、末尾の数だけずらした誤答をつくる。
+// まちがい候補が重複や正解との衝突でへったときの穴うめ用。
+// 単位のない裸の数字をまぜると、それだけが浮いて 問題を解かずに消去法で当てられてしまう。
+function nearMiss(ans: string, taken: string[]): string | null {
+  const m = /^(.*?)(\d+(?:\.\d+)?)(\D*)$/.exec(ans)
+  if (!m) return null // 数をふくまない答え（「えんぴつ」「正方形」など）
+  const [, head, numStr, tail] = m
+  const decimals = numStr.includes('.') ? numStr.split('.')[1].length : 0
+  const step = decimals === 0 ? 1 : Number((10 ** -decimals).toFixed(decimals))
+  const n = Number(numStr)
+  for (let k = 1; k <= 20; k++) {
+    for (const sign of [1, -1]) {
+      const v = n + sign * k * step
+      if (v <= 0) continue // 小学校では負の数を出さない
+      const cand = head + v.toFixed(decimals) + tail
+      if (cand !== ans && !taken.includes(cand)) return cand
+    }
+  }
+  return null
+}
+
 // 正解1つ + まちがい候補から3つ選んで4択にする
 function mc(text: string, answer: string | number, wrongCandidates: (string | number)[]): Problem {
   const ans = String(answer)
@@ -25,17 +47,20 @@ function mc(text: string, answer: string | number, wrongCandidates: (string | nu
     if (wrongs.length === 3) break
   }
   while (wrongs.length < 3) {
-    const filler = String(ri(1, 99))
-    if (filler !== ans && !wrongs.includes(filler)) wrongs.push(filler)
+    const filler = nearMiss(ans, wrongs)
+    if (!filler) break
+    wrongs.push(filler)
   }
   const choices = shuffle([ans, ...wrongs])
   return { text, choices, answer: choices.indexOf(ans) }
 }
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+// 約分した分数。分母が1になったら整数であらわす（「1/1」ではなく「1」）
 const frac = (n: number, d: number): string => {
   const k = gcd(n, d)
-  return `${n / k}/${d / k}`
+  const den = d / k
+  return den === 1 ? `${n / k}` : `${n / k}/${den}`
 }
 const fmtTime = (h: number, m: number) => (m === 0 ? `${h}時` : `${h}時${m}分`)
 
@@ -121,10 +146,12 @@ export const SKILLS: Record<string, Skill[]> = {
     S('word', 'ぶんしょうだい', () => {
       const a = ri(2, 9)
       const b = ri(2, 9)
+      // a*b+a と a*(b+1) は同じ式なので、まちがい候補には片方だけ使う
       return mc(`1さらに みかんが ${a}こずつ のって います。${b}さらでは ぜんぶで なんこ？`, `${a * b}こ`, [
-        `${a + b}こ`,
-        `${a * b + a}こ`,
-        `${a * (b + 1)}こ`,
+        `${a + b}こ`, // たし算してしまう
+        `${a * (b + 1)}こ`, // 1さら多くかぞえる
+        `${a * (b - 1)}こ`, // 1さら少なくかぞえる
+        `${a * b + 1}こ`,
       ])
     }),
   ],
@@ -979,7 +1006,8 @@ export const SKILLS: Record<string, Skill[]> = {
     S('hirei', '比例の式', () => {
       const k = ri(2, 5)
       const x = ri(2, 9)
-      return mc(`y ＝ ${k} × x　の式で、x が ${x} のとき y は？`, k * x, [k + x, k * x + k, k * (x + 1)])
+      // k*x+k と k*(x+1) は同じ式なので、まちがい候補には片方だけ使う
+      return mc(`y ＝ ${k} × x　の式で、x が ${x} のとき y は？`, k * x, [k + x, k * (x + 1), k * (x - 1), k * x + 1])
     }),
     S('hi', '等しい比', () => {
       const a = ri(2, 5)
@@ -1024,10 +1052,45 @@ export function skillNames(stageId: string): string[] {
   return (SKILLS[stageId] ?? []).map((s) => s.name)
 }
 
-// 1問生成する。
-// stats（技能べつ正誤記録）を渡すと、まちがいが多い技能・まだやっていない技能を
-// 優先して出題する（れんしゅうバトル用）。渡さなければ全技能を均等に出す（ボス用）。
+// 技能IDから表示名をひく（バンク問題用）
+function skillNameOf(stageId: string, skillId: string): string {
+  return SKILLS[stageId]?.find((s) => s.id === skillId)?.name ?? 'そうふくしゅう'
+}
+
+// 手作りバンクから1問ひく（boss=true なら総復習のむずかしめ問題）
+function fromBank(stageId: string, boss: boolean): Problem | null {
+  const pool = (BANK[stageId] ?? []).filter((p) => (boss ? p.boss : !p.boss))
+  if (pool.length === 0) return null
+  const p = pool[Math.floor(Math.random() * pool.length)]
+  const choices = shuffle([...p.choices]) // 正解は choices[0] に書いてあるのでシャッフルして探す
+  return {
+    text: p.text,
+    choices,
+    answer: choices.indexOf(p.choices[0]),
+    skill: skillNameOf(stageId, p.skillId),
+    skillId: p.skillId,
+  }
+}
+
+// 大ボス用に1問生成する。
+// 70% は手作りの「総復習・むずかしめ」問題、30% は全技能まぜこぜの通常問題。
+export function genBossProblem(stageId: string): Problem {
+  if (Math.random() < 0.7) {
+    const b = fromBank(stageId, true)
+    if (b) return b
+  }
+  return genProblem(stageId)
+}
+
+// 1問生成する（れんしゅう用）。
+// 50% は手作りバンクの実問題、50% はジェネレータ（数がえ問題）。
+// stats（技能べつ正誤記録）を渡すと、ジェネレータ側は まちがいが多い技能・
+// まだやっていない技能を優先して出題する。渡さなければ全技能を均等に出す。
 export function genProblem(stageId: string, stats?: Record<string, { o: number; x: number }>): Problem {
+  if (Math.random() < 0.5) {
+    const b = fromBank(stageId, false)
+    if (b) return b
+  }
   const skills = SKILLS[stageId]
   if (!skills || skills.length === 0) throw new Error(`no skills for ${stageId}`)
   let skill: Skill
