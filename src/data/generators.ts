@@ -1,5 +1,6 @@
 import type { Problem } from '../types'
 import { BANK } from './bank'
+import { SKILLS_EXTRA } from './skillsExtra'
 
 // 各単元を評価規準ベースの「技能」に細分化し、技能ごとに問題を生成する。
 // 例）2年「長さとかさ」→ たんい変換 / かさのたんい / 長さの計算 / 大小くらべ / たんいえらび
@@ -73,7 +74,7 @@ export interface Skill {
 
 const S = (id: string, name: string, gen: () => Problem): Skill => ({ id, name, gen })
 
-export const SKILLS: Record<string, Skill[]> = {
+const SKILLS_BASE: Record<string, Skill[]> = {
   // ================= 数と計算 =================
   'keisan-1': [
     S('add', 'たしざん', () => {
@@ -1046,6 +1047,19 @@ export const SKILLS: Record<string, Skill[]> = {
     }),
   ],
 }
+
+// 基本技能（generators内）＋教科書準拠の追加技能（skillsExtra）を単元ごとに合体。
+// 同じ id が両方にある場合は基本側を優先して重複を避ける。
+export const SKILLS: Record<string, Skill[]> = (() => {
+  const merged: Record<string, Skill[]> = {}
+  const stageIds = new Set([...Object.keys(SKILLS_BASE), ...Object.keys(SKILLS_EXTRA)])
+  for (const id of stageIds) {
+    const base = SKILLS_BASE[id] ?? []
+    const extra = (SKILLS_EXTRA[id] ?? []).filter((e) => !base.some((b) => b.id === e.id))
+    merged[id] = [...base, ...extra]
+  }
+  return merged
+})()
 
 // 単元の技能名リスト（UIの「みがく力」チップ用）
 export function skillNames(stageId: string): string[] {
