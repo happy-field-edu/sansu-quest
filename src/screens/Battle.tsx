@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../game/store'
 import {
   playerStats,
@@ -49,6 +49,11 @@ export default function Battle({
   const [fx, setFx] = useState<'none' | 'hit' | 'miss'>('none')
   const [msg, setMsg] = useState(`${enemyName}（${stage.title}）が あらわれた！`)
   const [memoOpen, setMemoOpen] = useState(false)
+  const [numInput, setNumInput] = useState('') // テンキーの入力
+
+  // こたえが ただの数（整数・小数）なら テンキーで直接入力するモード
+  const correctAnswer = problem.choices[problem.answer]
+  const numericMode = /^[0-9]+(\.[0-9]+)?$/.test(correctAnswer)
   const [endMsgs, setEndMsgs] = useState<string[]>([])
   const [endIdx, setEndIdx] = useState(0)
   const expRef = useRef(0)
@@ -100,12 +105,16 @@ export default function Battle({
     }
   }
 
-  function answer(i: number) {
-    if (selected !== null || phase !== 'fight') return
-    setSelected(i)
-    const correct = i === problem.answer
+  // 正誤が きまったあとの 共通処理（4択・テンキー共用）
+  function resolve(correct: boolean, reveal?: string) {
     setFx(correct ? 'hit' : 'miss')
     if (problem.skillId) dispatch({ type: 'record-skill', stageId, skillId: problem.skillId, correct })
+    const goNext = () => {
+      setProblem(nextProblem())
+      setSelected(null)
+      setNumInput('')
+      setFx('none')
+    }
     if (correct) {
       sfx.correct()
       setMsg(`せいかい！ ${enemyName}に こうげき！`)
@@ -114,35 +123,73 @@ export default function Battle({
       const next = progress + 1
       window.setTimeout(() => {
         setProgress(next)
-        if (next >= target) {
-          finish(true)
-        } else {
-          setProblem(nextProblem())
-          setSelected(null)
-          setFx('none')
-        }
+        if (next >= target) finish(true)
+        else goNext()
       }, 650)
     } else {
       sfx.wrong()
-      setMsg(`ミス！ ゆうしゃは ${startStats.mistakeDamage}の ダメージ！`)
+      setMsg(
+        reveal
+          ? `ミス！ こたえは「${reveal}」。${startStats.mistakeDamage}の ダメージ！`
+          : `ミス！ ゆうしゃは ${startStats.mistakeDamage}の ダメージ！`,
+      )
       const newHp = hp - startStats.mistakeDamage
       window.setTimeout(() => {
         setHp(newHp)
-        if (newHp <= 0) {
-          finish(false)
-        } else {
-          setProblem(nextProblem())
-          setSelected(null)
-          setFx('none')
-        }
-      }, 900)
+        if (newHp <= 0) finish(false)
+        else goNext()
+      }, 1100)
     }
+  }
+
+  function answer(i: number) {
+    if (selected !== null || phase !== 'fight') return
+    setSelected(i)
+    resolve(i === problem.answer)
+  }
+
+  // テンキー入力
+  function pressKey(k: string) {
+    if (selected !== null || phase !== 'fight') return
+    if (k === 'del') setNumInput((s) => s.slice(0, -1))
+    else if (k === 'clear') setNumInput('')
+    else if (k === '.') setNumInput((s) => (s === '' || s.includes('.') || s.length >= 6 ? s : s + '.'))
+    else setNumInput((s) => (s.length >= 6 ? s : s + k))
+  }
+
+  function submitNum() {
+    if (selected !== null || phase !== 'fight' || numInput === '' || numInput === '.') return
+    setSelected(-1) // 入力をロック
+    const correct = Number(numInput) === Number(correctAnswer)
+    resolve(correct, correct ? undefined : correctAnswer)
   }
 
   function flee() {
     if (expRef.current > 0) dispatch({ type: 'gain-exp', amount: expRef.current })
     onExit()
   }
+
+  // パソコンの数字キーでも テンキー入力できる（OSキーボードは出さない）
+  useEffect(() => {
+    if (phase !== 'fight' || !numericMode) return
+    const onKey = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault()
+        pressKey(e.key)
+      } else if (e.key === '.') {
+        e.preventDefault()
+        pressKey('.')
+      } else if (e.key === 'Backspace') {
+        e.preventDefault()
+        pressKey('del')
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        submitNum()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   // 勝敗メッセージを 1つずつ すすめる
   const endMsgDone = () => {
@@ -152,7 +199,7 @@ export default function Battle({
 
   return (
     <div className={`fixed inset-0 flex flex-col items-center bg-black ${fx === 'miss' ? 'anim-shake' : ''}`}>
-      <div className="flex h-full w-full max-w-[520px] flex-col p-2">
+      <div className="flex h-full w-full max-w-[520px] flex-col overflow-y-auto p-2">
         {/* ---- 敵エリア（フロントビュー） ---- */}
         <div className="dq-frame relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-[#050510]">
           {/* 戦闘背景（うずまく闇） */}
@@ -201,21 +248,53 @@ export default function Battle({
               {problem.skill && <p className="mb-1 text-xs text-cyan-300">🎯 めあて：{problem.skill}</p>}
               <p className="text-lg leading-relaxed whitespace-pre-line">{problem.text}</p>
             </Win>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {problem.choices.map((c, i) => {
-                let cls = 'text-white hover:text-yellow-200'
-                if (selected !== null) {
-                  if (i === problem.answer) cls = 'bg-emerald-700 text-white'
-                  else if (i === selected) cls = 'bg-red-800 text-white'
-                  else cls = 'text-slate-500'
-                }
-                return (
-                  <button key={i} onClick={() => answer(i)} disabled={selected !== null} className={`dq-win font-dot px-2 py-2.5 text-lg ${cls}`}>
-                    {c}
-                  </button>
-                )
-              })}
-            </div>
+            {numericMode ? (
+              /* インゲーム・テンキー（OSのキーボードは ひらかない） */
+              <div className="mt-2" style={{ touchAction: 'manipulation' }}>
+                <div
+                  className={`dq-win min-h-[3.2rem] px-4 py-2 text-right font-dot text-3xl ${
+                    selected !== null ? (fx === 'hit' ? 'bg-emerald-800' : 'bg-red-900') : ''
+                  }`}
+                >
+                  {numInput !== '' ? numInput : <span className="text-base opacity-40">こたえを いれてね</span>}
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'del'].map((k) => (
+                    <button
+                      key={k}
+                      onClick={() => pressKey(k)}
+                      disabled={selected !== null}
+                      className="dq-win font-dot py-3 text-2xl text-white active:translate-y-0.5 active:bg-slate-700 disabled:text-slate-600"
+                    >
+                      {k === 'del' ? '⌫' : k}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={submitNum}
+                  disabled={selected !== null || numInput === ''}
+                  className="dq-win font-dot mt-2 w-full py-3 text-2xl text-yellow-200 active:translate-y-0.5 active:bg-slate-700 disabled:text-slate-600"
+                >
+                  ▶ けってい
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {problem.choices.map((c, i) => {
+                  let cls = 'text-white hover:text-yellow-200'
+                  if (selected !== null) {
+                    if (i === problem.answer) cls = 'bg-emerald-700 text-white'
+                    else if (i === selected) cls = 'bg-red-800 text-white'
+                    else cls = 'text-slate-500'
+                  }
+                  return (
+                    <button key={i} onClick={() => answer(i)} disabled={selected !== null} className={`dq-win font-dot px-2 py-2.5 text-lg ${cls}`}>
+                      {c}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </>
         )}
 
@@ -236,7 +315,7 @@ export default function Battle({
             </Win>
             <Win className="w-40 px-2 py-1">
               <CommandList
-                active={phase === 'fight'}
+                active={phase === 'fight' && !numericMode}
                 items={[
                   { label: 'たたかう', value: 'fight' },
                   { label: 'どうぐ（メモ）', value: 'memo', note: memoOpen ? '▲' : '▼' },

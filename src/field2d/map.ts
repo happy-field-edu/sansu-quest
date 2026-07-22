@@ -1,6 +1,6 @@
 import type { SaveData, WorldId } from '../types'
 import { WORLD_BY_ID } from '../data/worlds'
-import { seeded } from './config2d'
+import { seeded, ZONE_NAMES } from './config2d'
 
 // グリッドベースのタイルマップ。1ワールド＝縦にならんだ6つの学年ゾーン。
 // 下（1年生）から上（6年生）へ すすんでいく。
@@ -12,7 +12,16 @@ export const PATH_X = 7 // まんなかの道の列
 
 // タイルの種類
 // g=草 p=道 t=木 r=岩 h=家 s=かんばん f=さく G=もん(ゾーンの出入り口) d=かざり
-export type Tile = 'g' | 'p' | 't' | 'r' | 'h' | 's' | 'f' | 'G' | 'd'
+// n=むらびと(NPC) w=水（あるけない）
+export type Tile = 'g' | 'p' | 't' | 'r' | 'h' | 's' | 'f' | 'G' | 'd' | 'n' | 'w'
+
+export interface Npc {
+  x: number
+  y: number
+  emoji: string
+  name: string
+  lines: string[]
+}
 
 export interface FieldMonster {
   id: string // `${stageId}-p0` など
@@ -29,6 +38,7 @@ export interface WorldMap {
   monsters: FieldMonster[]
   gateRows: { row: number; grade: number }[] // ゾーンgの出口（上へ）の行
   signs: { x: number; y: number; stageId: string }[]
+  npcs: Npc[]
 }
 
 // 学年gのゾーンの行はんい（下=1年生）
@@ -92,7 +102,43 @@ export function buildWorldMap(worldId: WorldId): WorldMap {
     const sx = PATH_X - 2
     tiles[sy][sx] = 's'
     signs.push({ x: sx, y: sy, stageId: stage.id })
+
+    // 2・4年生ゾーンには 小さな 池（あるけない）
+    if (stage.grade === 2 || stage.grade === 4) {
+      const wx = stage.grade === 2 ? 2 : MAP_W - 5
+      const wy = top + 3
+      for (let dy = 0; dy < 2; dy++)
+        for (let dx = 0; dx < 3; dx++) {
+          if (tiles[wy + dy]?.[wx + dx] === 'g') tiles[wy + dy][wx + dx] = 'w'
+        }
+    }
   }
+
+  // むらびと（NPC）：ぶつかる か Ⓐボタンで はなせる
+  const npcs: Npc[] = []
+  const placeNpc = (grade: number, x: number, dyFromBottom: number, emoji: string, name: string, lines: string[]) => {
+    const y = zoneRows(grade).bottom - dyFromBottom
+    if (tiles[y]?.[x] === undefined) return
+    tiles[y][x] = 'n'
+    npcs.push({ x, y, emoji, name, lines })
+  }
+  const z1 = ZONE_NAMES[world.stages[0].id]
+  placeNpc(1, PATH_X - 2, 3, '👵', 'むらの おばあさん', [
+    `ここは 1ねんせいの 「${z1}」だよ。`,
+    'モンスターに ぶつかると たたかいが はじまるよ。まけても だいじょうぶ、けいけんちは もらえるからね。',
+  ])
+  placeNpc(1, PATH_X + 3, 6, '👨‍🌾', 'むらびと', [
+    'そうびを つよくすると、ボスを たおすのに ひつような もんだいの かずが へるぞ！',
+    'モンスターを たおして そうびを あつめるのじゃ。',
+  ])
+  placeNpc(3, PATH_X + 2, 4, '🧙', 'たびの けんじゃ', [
+    '⚠️あかい わざは にがての しるし。れんしゅうバトルでは にがてな もんだいが でやすいぞ。',
+    'きろくの ちからで じぶんの にがてを しろう！',
+  ])
+  placeNpc(5, PATH_X - 3, 5, '🧒', 'ぼうけんずきの 子', [
+    'けいさんが むずかしいときは「どうぐ」の けいさんメモを つかうと いいよ。',
+    'ゆびで ひっさんが かけるんだ！',
+  ])
 
   // モンスター配置：各ゾーンに れんしゅう3体＋もんの前に ボス
   const monsters: FieldMonster[] = []
@@ -115,14 +161,16 @@ export function buildWorldMap(worldId: WorldId): WorldMap {
     monsters.push({ id: `${stage.id}-b`, stageId: stage.id, kind: 'boss', x: PATH_X, y: bossY, zoneTop: bossY, zoneBottom: bossY })
   }
 
-  return { tiles, monsters, gateRows, signs }
+  return { tiles, monsters, gateRows, signs, npcs }
 }
 
-// あるける タイルか（もんは あいていれば あるける）
+// あるける タイルか。
+// 木・岩・家・さく・水・立て札・NPCは あるけない（すり抜けなし）。
+// もん(G)は 前の学年の大ボスを たおしていれば あるける。
 export function isWalkable(map: WorldMap, save: SaveData, worldId: WorldId, x: number, y: number): boolean {
   if (x < 0 || y < 0 || y >= MAP_H || x >= MAP_W) return false
   const t = map.tiles[y][x]
-  if (t === 'g' || t === 'p' || t === 's') return true
+  if (t === 'g' || t === 'p') return true
   if (t === 'G') {
     const gate = map.gateRows.find((g) => g.row === y)
     if (!gate) return false

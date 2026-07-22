@@ -72,10 +72,18 @@ export default function Field2D({
 
   const [pos, setPos] = useState(() => startPos(save, worldId))
   const [facing, setFacing] = useState<Dir>('up')
+  const facingRef = useRef<Dir>('up')
+  facingRef.current = facing
   const [monsters, setMonsters] = useState<FieldMonster[]>(map.monsters)
   const [encounterFx, setEncounterFx] = useState<{ stageId: string; mode: 'practice' | 'boss' } | null>(null)
   const [prep, setPrep] = useState<string | null>(null) // ボス前ウィンドウ
   const [banner, setBanner] = useState<string | null>(null)
+  // 会話ウィンドウ（NPC・立て札）
+  const [dialog, setDialog] = useState<{ emoji: string; name: string; lines: string[] } | null>(null)
+  const [dlgIdx, setDlgIdx] = useState(0)
+  const dialogRef = useRef(dialog)
+  dialogRef.current = dialog
+  const dlgIdxRef = useRef(0)
 
   const posRef = useRef(pos)
   posRef.current = pos
@@ -115,8 +123,62 @@ export default function Field2D({
     return () => window.clearTimeout(t)
   }, [encounterFx, onBattle])
 
-  const tryStep = (dir: Dir) => {
+  // NPC・立て札の 会話をひらく
+  const openTalkAt = (x: number, y: number): boolean => {
+    const npc = map.npcs.find((n) => n.x === x && n.y === y)
+    if (npc) {
+      dlgIdxRef.current = 0
+      setDlgIdx(0)
+      setDialog({ emoji: npc.emoji, name: npc.name, lines: npc.lines })
+      return true
+    }
+    if (map.tiles[y]?.[x] === 's') {
+      const sign = map.signs.find((s) => s.x === x && s.y === y)
+      if (sign) {
+        const st = STAGE_BY_ID[sign.stageId]
+        const skills = (SKILLS[sign.stageId] ?? []).map((s) => s.name).join('・')
+        dlgIdxRef.current = 0
+        setDlgIdx(0)
+        setDialog({
+          emoji: '🪧',
+          name: 'たてふだ',
+          lines: [
+            `【${st.grade}年生・${ZONE_NAMES[sign.stageId]}】\n「${st.title}」の もんだいが でる エリアだ。`,
+            `みがく力：${skills}`,
+          ],
+        })
+        return true
+      }
+    }
+    return false
+  }
+
+  const advanceDialog = () => {
+    const d = dialogRef.current
+    if (!d) return
+    if (dlgIdxRef.current < d.lines.length - 1) {
+      dlgIdxRef.current += 1
+      setDlgIdx(dlgIdxRef.current)
+    } else {
+      dlgIdxRef.current = 0
+      setDlgIdx(0)
+      setDialog(null)
+    }
+  }
+
+  // むいている ほうこうを しらべる（Ⓐボタン）
+  const doAction = () => {
     if (lockRef.current || prep) return
+    if (dialogRef.current) {
+      advanceDialog()
+      return
+    }
+    const [dx, dy] = DELTA[facingRef.current]
+    openTalkAt(posRef.current.x + dx, posRef.current.y + dy)
+  }
+
+  const tryStep = (dir: Dir) => {
+    if (lockRef.current || prep || dialogRef.current) return
     setFacing(dir)
     const [dx, dy] = DELTA[dir]
     const nx = posRef.current.x + dx
@@ -129,6 +191,8 @@ export default function Field2D({
       else triggerEncounter(hit.stageId, 'practice')
       return
     }
+    // むらびと・立て札に ぶつかった → 会話
+    if (openTalkAt(nx, ny)) return
     if (!isWalkable(map, save, worldId, nx, ny)) {
       // とじた もんに ぶつかった
       if (map.tiles[ny]?.[nx] === 'G') {
@@ -145,6 +209,12 @@ export default function Field2D({
     const keyDir = (k: string): Dir | null =>
       k === 'arrowup' || k === 'w' ? 'up' : k === 'arrowdown' || k === 's' ? 'down' : k === 'arrowleft' || k === 'a' ? 'left' : k === 'arrowright' || k === 'd' ? 'right' : null
     const down = (e: KeyboardEvent) => {
+      // Ⓐボタン（しらべる・会話をすすめる）
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        doAction()
+        return
+      }
       const d = keyDir(e.key.toLowerCase())
       if (!d) return
       e.preventDefault()
@@ -184,8 +254,10 @@ export default function Field2D({
         if (bannerTimer.current <= 0) setBanner(null)
       }
       // モンスターのうろつき（1マスずつ ランダム歩き）
-      if (!started.current || lockRef.current || prep) return
+      if (!started.current || lockRef.current || prep || dialogRef.current) return
       let moved = false
+      // 同じマスに 2ひき 入らないように、うごくたびに 占有マスを こうしんする
+      const occ = new Set(monstersRef.current.map((o) => `${o.x},${o.y}`))
       const next = monstersRef.current.map((m) => {
         if (m.kind === 'boss') return m
         const t = (wanderTimers.current[m.id] ?? Math.random() * 1.2) - dt
@@ -201,12 +273,14 @@ export default function Field2D({
         const ny = m.y + dy
         if (ny < m.zoneTop || ny > m.zoneBottom) return m
         if (!isWalkable(map, save, worldId, nx, ny)) return m
-        if (monstersRef.current.some((o) => o !== m && o.x === nx && o.y === ny)) return m
+        if (occ.has(`${nx},${ny}`)) return m
         // プレイヤーに とびかかった！
         if (nx === posRef.current.x && ny === posRef.current.y) {
           triggerEncounter(m.stageId, 'practice')
           return m
         }
+        occ.delete(`${m.x},${m.y}`)
+        occ.add(`${nx},${ny}`)
         moved = true
         return { ...m, x: nx, y: ny }
       })
@@ -234,8 +308,10 @@ export default function Field2D({
         return { icon: '⛩️' }
       case 'd':
         return { icon: theme.deco }
+      case 'w':
+        return { bg: '#2b6cb0', icon: '' } // 水（あるけない）
       default:
-        return {}
+        return {} // 'n'（NPC）は草タイル＋スプライトで えがく
     }
   }
 
@@ -276,6 +352,18 @@ export default function Field2D({
               })}
             </div>
           ))}
+          {/* むらびと（NPC） */}
+          {map.npcs.map((n) => (
+            <div
+              key={`${n.x},${n.y}`}
+              className="absolute top-0 left-0 flex items-center justify-center"
+              style={{ width: TILE, height: TILE, transform: `translate(${n.x * TILE}px, ${n.y * TILE}px)` }}
+            >
+              <span className="text-2xl" style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}>
+                {n.emoji}
+              </span>
+            </div>
+          ))}
           {/* モンスター */}
           {monsters.map((m) => {
             const stage = STAGE_BY_ID[m.stageId]
@@ -309,6 +397,23 @@ export default function Field2D({
           </div>
         )}
 
+        {/* 会話ウィンドウ（NPC・立て札） */}
+        {dialog && (
+          <div className="absolute inset-x-2 bottom-2 z-10" onClick={advanceDialog}>
+            <Win className="cursor-pointer px-3 py-2">
+              <p className="mb-1 text-xs text-yellow-200">
+                {dialog.emoji} {dialog.name}
+              </p>
+              <p className="min-h-[3.2rem] text-sm leading-relaxed">
+                <Typewriter key={dlgIdx} text={dialog.lines[dlgIdx]} speed={22} />
+              </p>
+              <p className="dq-cursor-blink text-right text-xs">
+                {dlgIdx < dialog.lines.length - 1 ? '▼ タップで つづく' : '▼ タップで とじる'}
+              </p>
+            </Win>
+          </div>
+        )}
+
         {/* エンカウントのフラッシュ */}
         {encounterFx && <div className="dq-encounter absolute inset-0" />}
       </div>
@@ -339,7 +444,14 @@ export default function Field2D({
           <DirBtn dir="up" label="▲" onStep={tryStep} heldDir={heldDir} />
           <span />
           <DirBtn dir="left" label="◀" onStep={tryStep} heldDir={heldDir} />
-          <span className="flex items-center justify-center text-slate-600">・</span>
+          <button
+            onClick={doAction}
+            className="dq-win flex items-center justify-center text-sm font-bold text-yellow-200 active:bg-slate-700"
+            style={{ touchAction: 'manipulation' }}
+            title="はなす・しらべる"
+          >
+            Ⓐ
+          </button>
           <DirBtn dir="right" label="▶" onStep={tryStep} heldDir={heldDir} />
           <span />
           <DirBtn dir="down" label="▼" onStep={tryStep} heldDir={heldDir} />
