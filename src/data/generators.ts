@@ -956,9 +956,9 @@ const SKILLS_BASE: Record<string, Skill[]> = {
         ])
       }
       const step = pick([2, 3, 4])
-      const start = ri(15, 25)
+      const ans = ri(1, 6)
+      const start = ans + step * 4 // 答えが かならず 1以上に なるように
       const terms = [0, 1, 2, 3].map((i) => start - step * i)
-      const ans = start - step * 4
       return mc(`${terms.join('、')}、□ …　□に はいる かずは？`, ans, [ans + step, ans - step, ans + 1])
     }),
   ],
@@ -1071,18 +1071,105 @@ function skillNameOf(stageId: string, skillId: string): string {
   return SKILLS[stageId]?.find((s) => s.id === skillId)?.name ?? 'そうふくしゅう'
 }
 
-// 手作りバンクから1問ひく（boss=true なら総復習のむずかしめ問題）
+// 選択肢を「値」に変換（分数 a/b は数値、単位つき整数はその数、それ以外は文字列そのまま）。
+// 「2/4」と「1/2」のような 値がおなじ選択肢を はじくために使う。
+function choiceValue(c: string): string {
+  const f = /^(\d+)\/(\d+)$/.exec(c)
+  if (f) return `#${Number(f[1]) / Number(f[2])}`
+  const n = /^-?\d+(\.\d+)?/.exec(c)
+  const unit = c.replace(/^-?\d+(\.\d+)?/, '')
+  return n ? `${unit}#${Number(n[0])}` : c
+}
+
+// 4つの選択肢が 文字列・値ともに かぶっていないか
+function allDistinct(choices: string[]): boolean {
+  if (new Set(choices).size !== choices.length) return false
+  return new Set(choices.map(choiceValue)).size === choices.length
+}
+
+// 正解の書式にあわせた 予備の まちがいを作る（どうしても選択肢が足りないときの保険）
+function makeFiller(correct: string, k: number): string {
+  const f = /^(-?\d+)\/(\d+)$/.exec(correct)
+  if (f) return `${Math.max(1, Number(f[1]) + k)}/${Number(f[2]) + 1}`
+  const n = /^-?\d+(\.\d+)?/.exec(correct)
+  if (n) {
+    const unit = correct.replace(/^-?\d+(\.\d+)?/, '')
+    const dec = n[0].includes('.') ? n[0].split('.')[1].length : 0
+    const step = Number((10 ** -dec).toFixed(dec))
+    const v = Number((Number(n[0]) + k * step).toFixed(dec))
+    return `${v > 0 ? v : Math.abs(v) + 1}${unit}`
+  }
+  return `${correct}(${k})`
+}
+
+// 選択肢の 先頭の数（分数もふくむ）。数でなければ null
+function numOf(c: string): number | null {
+  const f = /^(-?\d+)\/(\d+)$/.exec(c)
+  if (f) return Number(f[1]) / Number(f[2])
+  const n = /^-?\d+(\.\d+)?/.exec(c)
+  return n ? Number(n[0]) : null
+}
+
+// どんな問題でも「4つとも 値がちがう選択肢」に そろえる（正解は保つ）。安全網。
+// 正解が 0以上のとき、負の数の まちがいは 出さない（小学生の答えは 0以上）。
+function sanitize(p: Problem): Problem {
+  const correct = p.choices[p.answer]
+  const correctNum = numOf(correct)
+  const noNeg = correctNum !== null && correctNum >= 0
+  const seen = new Set<string>()
+  const kept: string[] = []
+  const push = (c: string, isCorrect = false) => {
+    if (kept.length >= 4) return
+    if (!isCorrect && noNeg) {
+      const v = numOf(c)
+      if (v !== null && v < 0) return // 負の まちがいは のぞく
+    }
+    const key = choiceValue(c)
+    if (!seen.has(key)) {
+      seen.add(key)
+      kept.push(c)
+    }
+  }
+  push(correct, true)
+  for (const c of p.choices) push(c)
+  let k = 1
+  while (kept.length < 4 && k < 99) {
+    push(makeFiller(correct, k))
+    k++
+  }
+  const choices = shuffle(kept.slice(0, 4))
+  return { ...p, choices, answer: choices.indexOf(correct) }
+}
+
+// 手作りバンクから1問つくる（boss=true なら総復習のむずかしめ問題）。
+// テンプレートを呼ぶので、出題ごとに数字が乱数でかわる。
+// まれに選択肢が かぶる数の組みが 出たら、数回 引きなおして きれいな組みを選ぶ（安全網）。
 function fromBank(stageId: string, boss: boolean): Problem | null {
-  const pool = (BANK[stageId] ?? []).filter((p) => (boss ? p.boss : !p.boss))
+  const pool = (BANK[stageId] ?? []).filter((e) => (boss ? e.boss : !e.boss))
   if (pool.length === 0) return null
-  const p = pool[Math.floor(Math.random() * pool.length)]
-  const choices = shuffle([...p.choices]) // 正解は choices[0] に書いてあるのでシャッフルして探す
+  const entry = pool[Math.floor(Math.random() * pool.length)]
+  // 8回までひきなおして「4つとも かぶらない」きれいな組みを採用する（安全網）
+  let r = entry.gen()
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const cand = [r.correct, ...r.wrongs.filter((w) => w !== r.correct)].slice(0, 4)
+    if (cand.length === 4 && allDistinct(cand)) break
+    r = entry.gen()
+  }
+  // 採用した r で 選択肢をつくる。重複が残っていたら 数でうめる（ほぼ来ない）
+  const uniq: string[] = [r.correct]
+  for (const w of r.wrongs) if (!uniq.includes(w)) uniq.push(w)
+  let guard = 0
+  while (uniq.length < 4 && guard++ < 60) {
+    const filler = String(Math.floor(Math.random() * 90) + 10)
+    if (!uniq.includes(filler)) uniq.push(filler)
+  }
+  const choices = shuffle(uniq.slice(0, 4))
   return {
-    text: p.text,
+    text: r.text,
     choices,
-    answer: choices.indexOf(p.choices[0]),
-    skill: skillNameOf(stageId, p.skillId),
-    skillId: p.skillId,
+    answer: choices.indexOf(r.correct),
+    skill: skillNameOf(stageId, entry.skillId),
+    skillId: entry.skillId,
   }
 }
 
@@ -1091,9 +1178,9 @@ function fromBank(stageId: string, boss: boolean): Problem | null {
 export function genBossProblem(stageId: string): Problem {
   if (Math.random() < 0.7) {
     const b = fromBank(stageId, true)
-    if (b) return b
+    if (b) return sanitize(b)
   }
-  return genProblem(stageId)
+  return sanitize(genProblemImpl(stageId))
 }
 
 // 1問生成する（れんしゅう用）。
@@ -1101,6 +1188,10 @@ export function genBossProblem(stageId: string): Problem {
 // stats（技能べつ正誤記録）を渡すと、ジェネレータ側は まちがいが多い技能・
 // まだやっていない技能を優先して出題する。渡さなければ全技能を均等に出す。
 export function genProblem(stageId: string, stats?: Record<string, { o: number; x: number }>): Problem {
+  return sanitize(genProblemImpl(stageId, stats))
+}
+
+function genProblemImpl(stageId: string, stats?: Record<string, { o: number; x: number }>): Problem {
   if (Math.random() < 0.5) {
     const b = fromBank(stageId, false)
     if (b) return b

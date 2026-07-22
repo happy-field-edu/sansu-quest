@@ -301,9 +301,9 @@ export const SKILLS_EXTRA: Record<string, Skill[]> = {
           return mc(`(${a} ＋ ${b}) × ${c} ＝ ？`, (a + b) * c, [a + b * c, a + b + c, a * c + b])
         },
         () => {
-          const a = ri(20, 60)
-          const b = ri(2, 9)
-          const c = ri(2, 9)
+          const b = ri(2, 6)
+          const c = ri(2, 6)
+          const a = b * c + ri(2, 20) // a ≥ b×c にして 答えが 0以上になるように
           return mc(`${a} − ${b} × ${c} ＝ ？`, a - b * c, [(a - b) * c, a - b - c, a - b + c])
         },
       ])

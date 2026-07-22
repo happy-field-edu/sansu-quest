@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { WorldId } from '../types'
 import { useGame } from '../game/store'
-import { playerStats, skillLevelOf, BOSS_BASE, type SkillLevel } from '../game/logic'
+import { playerStats, skillLevelOf, bossBaseOf, bossRequiredFor, type SkillLevel } from '../game/logic'
 import { WORLD_BY_ID, STAGE_BY_ID } from '../data/worlds'
 import { SKILLS } from '../data/generators'
 import { ITEMS } from '../data/items'
@@ -425,8 +425,8 @@ export default function Field2D({
             {zoneGrade}年生・{ZONE_NAMES[zoneStage.id]}｜{zoneStage.title}
           </p>
           <p className="text-[11px] text-slate-300">
-            Lv.{stats.level}　ボス <span className="line-through">{BOSS_BASE}</span>→
-            <span className="text-yellow-200">{stats.bossRequired}問</span>
+            Lv.{stats.level}　ボス <span className="line-through">{bossBaseOf(zoneStage.id)}</span>→
+            <span className="text-yellow-200">{bossRequiredFor(zoneStage.id, stats.power)}問</span>
             {(SKILLS[zoneStage.id] ?? []).map((s) => {
               const { level } = skillLevelOf(save.skillStats, zoneStage.id, s.id)
               return (
@@ -481,7 +481,7 @@ export default function Field2D({
               <p>
                 たおすには 「{prepStage.title}」の もんだいに{' '}
                 <span className="text-yellow-200">
-                  {BOSS_BASE}−Lv{stats.level}−そうび{stats.atk}＝{stats.bossRequired}問
+                  {bossBaseOf(prepStage.id)}−Lv{stats.level}−そうび{stats.atk}＝{bossRequiredFor(prepStage.id, stats.power)}問
                 </span>{' '}
                 せいかい！　ミスすると HP−{stats.mistakeDamage}。
               </p>
@@ -508,7 +508,7 @@ export default function Field2D({
                   {
                     label: 'たたかう',
                     value: 'fight',
-                    note: `${stats.bossRequired}もん`,
+                    note: `${bossRequiredFor(prepStage.id, stats.power)}もん`,
                     disabled: !save.practiced.includes(prepStage.id),
                   },
                   { label: 'よしゅうする', value: 'practice', note: '5もん・そうびドロップ' },

@@ -34,20 +34,56 @@ function nearMiss(ans: string, taken: string[]): string | null {
   return null
 }
 
-// 正解1つ + まちがい候補から3つ選んで4択にする
+// 選択肢を「値」に正規化する。分数 a/b は数値、単位つき整数は 単位＋数値、
+// それ以外は文字列そのまま。「6/12」と「1/2」のような 値がおなじ選択肢を はじくのに使う。
+function canon(c: string): string {
+  const f = /^(-?\d+)\/(\d+)$/.exec(c)
+  if (f) return `#${Number(f[1]) / Number(f[2])}`
+  const n = /^-?\d+(\.\d+)?/.exec(c)
+  if (n) return `${c.replace(/^-?\d+(\.\d+)?/, '')}#${Number(n[0])}`
+  return c
+}
+
+// 選択肢の 数値（先頭の数）。分数もふくむ。数でなければ null
+function numVal(c: string): number | null {
+  const f = /^(-?\d+)\/(\d+)$/.exec(c)
+  if (f) return Number(f[1]) / Number(f[2])
+  const n = /^-?\d+(\.\d+)?/.exec(c)
+  return n ? Number(n[0]) : null
+}
+
+// 正解1つ + まちがい候補から3つ選んで4択にする。
+// 文字列だけでなく「値」でも重複を のぞく（分数の 見た目ちがい・同値を はじく）。
 export function mc(text: string, answer: string | number, wrongCandidates: (string | number)[]): Problem {
   const ans = String(answer)
+  const ansNum = numVal(ans)
+  const takenVal = new Set([canon(ans)])
   const wrongs: string[] = []
+  const tryPush = (w: string): boolean => {
+    const wn = numVal(w)
+    // 正解が 正の数のとき、負・ゼロの まちがいは 出さない（小学生の答えは 0以上）
+    if (ansNum !== null && ansNum > 0 && wn !== null && wn <= 0) return false
+    const v = canon(w)
+    if (w !== ans && !wrongs.includes(w) && !takenVal.has(v)) {
+      wrongs.push(w)
+      takenVal.add(v)
+      return true
+    }
+    return false
+  }
   for (const w of wrongCandidates.map(String)) {
-    if (w !== ans && !wrongs.includes(w)) wrongs.push(w)
+    tryPush(w)
     if (wrongs.length === 3) break
   }
-  while (wrongs.length < 3) {
+  let guard = 0
+  while (wrongs.length < 3 && guard++ < 40) {
     const filler = nearMiss(ans, [ans, ...wrongs]) ?? String(ri(1, 99))
-    if (filler !== ans && !wrongs.includes(filler)) wrongs.push(filler)
-    else break
+    if (!tryPush(filler)) {
+      // nearMiss が かぶったら 別の数でうめる
+      tryPush(String(ri(1, 99) + guard))
+    }
   }
-  while (wrongs.length < 3) wrongs.push(String(ri(100, 999))) // 保険（通常ここには来ない）
+  while (wrongs.length < 3) wrongs.push(String(ri(100, 999) + wrongs.length)) // 保険
   const choices = shuffle([ans, ...wrongs])
   return { text, choices, answer: choices.indexOf(ans) }
 }

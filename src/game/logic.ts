@@ -1,5 +1,6 @@
-import type { Item, SaveData } from '../types'
+import type { Item, SaveData, WorldId } from '../types'
 import { ITEMS } from '../data/items'
+import { STAGE_BY_ID } from '../data/worlds'
 
 // ---- けいけんちとレベル ----
 export const expNeed = (level: number) => 30 + (level - 1) * 15
@@ -20,10 +21,31 @@ export function equippedItems(save: SaveData): Item[] {
     .filter((i): i is Item => Boolean(i))
 }
 
-// ---- プレイヤーの総合ステータス ----
-// power(=レベル+こうげき力) が高いほど、ボスに必要な問題数が 50問 → 25問まで減る。
-export const BOSS_BASE = 50
-export const BOSS_MIN = 25
+// ---- 大ボスの必要問題数（ワールド×学年でだんだん増える） ----
+// 村が おくに いくほど、また ワールドによって、必要な正解数が ふえる。
+// 例）足し算の村(1年)=50, 掛け算の村(2年)=100 …（数と計算ワールドは 学年×50）
+// power(=レベル+こうげき力) が高いほど、その基準から 問題数が 減る（さいてい 基準の半分）。
+export const BOSS_BASE_BY_WORLD: Record<WorldId, number> = {
+  keisan: 50, //  50, 100, 150, 200, 250, 300
+  ryou: 40, //  40,  80, 120, 160, 200, 240
+  zukei: 45, //  45,  90, 135, 180, 225, 270
+  kankei: 55, //  55, 110, 165, 220, 275, 330
+}
+
+// そのステージの 大ボス基準問題数
+export function bossBaseOf(stageId: string): number {
+  const stage = STAGE_BY_ID[stageId]
+  const per = BOSS_BASE_BY_WORLD[stage.worldId] ?? 50
+  return per * stage.grade
+}
+
+// 基準の半分を さいていラインにする（強くても これより下がらない）
+export const bossMinOf = (stageId: string): number => Math.ceil(bossBaseOf(stageId) / 2)
+
+// power を引いた、じっさいに たおすのに ひつような正解数
+export function bossRequiredFor(stageId: string, power: number): number {
+  return Math.max(bossMinOf(stageId), bossBaseOf(stageId) - power)
+}
 
 export function playerStats(save: SaveData) {
   const { level, into, need } = levelFromExp(save.exp)
@@ -40,7 +62,6 @@ export function playerStats(save: SaveData) {
     def,
     maxHp: 20 + (level - 1) * 3 + hpBonus,
     power,
-    bossRequired: Math.max(BOSS_MIN, BOSS_BASE - power),
     mistakeDamage: Math.max(1, 5 - Math.floor(def / 3)),
   }
 }

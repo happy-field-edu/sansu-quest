@@ -1,5 +1,5 @@
 import { useGame } from '../game/store'
-import { playerStats, BOSS_BASE } from '../game/logic'
+import { playerStats } from '../game/logic'
 import { ITEMS } from '../data/items'
 import { SLOTS } from '../types'
 
@@ -39,8 +39,8 @@ export default function Equip({ onBack }: { onBack: () => void }) {
           </div>
         </div>
         <div className="mt-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/10 px-3 py-2 text-center text-sm">
-          ボスにひつような正解数：<span className="text-slate-400 line-through">{BOSS_BASE}問</span>
-          <span className="font-dot mx-1 text-2xl font-bold text-yellow-300">→ {stats.bossRequired}問</span>
+          ちから（レベル＋こうげき）＝<span className="font-dot mx-1 text-2xl font-bold text-yellow-300">{stats.power}</span>
+          <span className="text-slate-300"> → どの村でも ボスの ひつよう問題数を −{stats.power}！</span>
         </div>
       </div>
 

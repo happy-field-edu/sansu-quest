@@ -1,113 +1,353 @@
-import { P, B, type BankProblem } from './bankUtil'
+import { T, BT, wrong, wrongF, fracChoices, type BankGen } from './bankUtil'
+import { ri, pick, frac, gcd } from './genUtil'
 
-// 数と計算のワールド：手作り問題バンク（通常10問＋ボス総復習6問／単元）
-export const BANK_KEISAN: Record<string, BankProblem[]> = {
+// 数と計算のワールド：テンプレート問題バンク（呼ぶたびに数字が乱数でかわる）
+export const BANK_KEISAN: Record<string, BankGen[]> = {
+  // ===== 1年 たし算とひき算 =====
   'keisan-1': [
-    P('add', 'りんごが 3こ、みかんが 2こ あります。あわせて なんこ？', '5こ', ['4こ', '6こ', '7こ']),
-    P('add', '6 ＋ 3 ＝ ？', '9', ['8', '10', '7']),
-    P('add', '3 ＋ 4 ＝ ？', '7', ['6', '8', '5']),
-    P('sub', '9 − 4 ＝ ？', '5', ['4', '6', '3']),
-    P('sub', 'ふうせんが 7こ ありました。3こ とんでいきました。のこりは？', '4こ', ['5こ', '3こ', '10こ']),
-    P('three', '2 ＋ 5 − 3 ＝ ？', '4', ['5', '3', '7']),
-    P('three', '10 − 4 ＋ 2 ＝ ？', '8', ['6', '7', '4']),
-    P('box', '□ ＋ 4 ＝ 9　□に はいる かずは？', '5', ['4', '6', '13']),
-    P('box', '8 − □ ＝ 5　□に はいる かずは？', '3', ['2', '4', '13']),
-    P('word', 'バスに 5人 のって います。バスていで 3人 のってきました。ぜんぶで なん人？', '8人', ['7人', '2人', '9人']),
-    B('add', '8 ＋ 7 ＝ ？（くりあがりに ちゅうい！）', '15', ['14', '16', '13']),
-    B('sub', '14 − 6 ＝ ？（くりさがりに ちゅうい！）', '8', ['7', '9', '6']),
-    B('three', '6 ＋ 7 − 5 ＝ ？', '8', ['7', '9', '18']),
-    B('word', 'みかんが 5こ あります。3こ もらって、2こ たべました。いま なんこ？', '6こ', ['7こ', '5こ', '10こ']),
-    B('sub', '9 は 6 より いくつ 大きい かずかな？', '3', ['2', '4', '15']),
-    B('box', '□ − 4 ＝ 7　□に はいる かずは？', '11', ['3', '10', '12']),
+    T('add', () => {
+      const a = ri(2, 8)
+      const b = ri(1, 9 - a > 1 ? 9 - a : 1)
+      return { text: `${a} ＋ ${b} ＝ ？`, correct: `${a + b}`, wrongs: wrong(a + b) }
+    }),
+    T('add', () => {
+      const fruit = pick(['りんご', 'みかん', 'いちご', 'あめ'])
+      const a = ri(2, 6)
+      const b = ri(1, 4)
+      return { text: `${fruit}が ${a}こ、もう ${b}こ あります。あわせて なんこ？`, correct: `${a + b}こ`, wrongs: wrong(a + b, 'こ') }
+    }),
+    T('add', () => {
+      const a = ri(2, 6)
+      const b = ri(1, 4)
+      return { text: `バスに ${a}人 のって います。バスていで ${b}人 のってきました。ぜんぶで なん人？`, correct: `${a + b}人`, wrongs: wrong(a + b, '人') }
+    }),
+    T('sub', () => {
+      const a = ri(4, 10)
+      const b = ri(1, a - 1)
+      return { text: `${a} − ${b} ＝ ？`, correct: `${a - b}`, wrongs: wrong(a - b) }
+    }),
+    T('sub', () => {
+      const a = ri(4, 9)
+      const b = ri(1, a - 1)
+      return { text: `ふうせんが ${a}こ ありました。${b}こ とんでいきました。のこりは なんこ？`, correct: `${a - b}こ`, wrongs: wrong(a - b, 'こ') }
+    }),
+    T('three', () => {
+      const a = ri(2, 5)
+      const b = ri(2, 5)
+      const c = ri(1, a + b - 1)
+      return { text: `${a} ＋ ${b} − ${c} ＝ ？`, correct: `${a + b - c}`, wrongs: wrong(a + b - c) }
+    }),
+    T('box', () => {
+      const total = ri(6, 10)
+      const a = ri(1, total - 1)
+      return { text: `${a} ＋ □ ＝ ${total}　□に はいる かずは？`, correct: `${total - a}`, wrongs: wrong(total - a) }
+    }),
+    T('box', () => {
+      const a = ri(5, 10)
+      const b = ri(1, a - 1)
+      return { text: `${a} − □ ＝ ${a - b}　□に はいる かずは？`, correct: `${b}`, wrongs: wrong(b) }
+    }),
+    T('word', () => {
+      const a = ri(3, 6)
+      const b = ri(2, 4)
+      return { text: `こうえんに 子どもが ${a}人 います。${b}人 きました。ぜんぶで なん人？`, correct: `${a + b}人`, wrongs: wrong(a + b, '人') }
+    }),
+    // ボス（くり上がり・くり下がり）
+    BT('add', () => {
+      const a = ri(5, 9)
+      const b = ri(11 - a, 9)
+      return { text: `${a} ＋ ${b} ＝ ？（くりあがりに ちゅうい！）`, correct: `${a + b}`, wrongs: wrong(a + b) }
+    }),
+    BT('sub', () => {
+      const ans = ri(3, 9)
+      const b = ri(ans + 2 > 11 ? 2 : 11 - ans, 9)
+      const a = ans + b // 11〜18
+      return { text: `${a} − ${b} ＝ ？（くりさがりに ちゅうい！）`, correct: `${ans}`, wrongs: wrong(ans) }
+    }),
+    BT('three', () => {
+      const a = ri(4, 8)
+      const b = ri(4, 8)
+      const c = ri(2, 6)
+      return { text: `${a} ＋ ${b} − ${c} ＝ ？`, correct: `${a + b - c}`, wrongs: wrong(a + b - c) }
+    }),
+    BT('word', () => {
+      const a = ri(4, 6)
+      const b = ri(2, 4)
+      const c = ri(1, 3)
+      return { text: `みかんが ${a}こ あります。${b}こ もらって、${c}こ たべました。いま なんこ？`, correct: `${a + b - c}こ`, wrongs: wrong(a + b - c, 'こ') }
+    }),
+    BT('box', () => {
+      const b = ri(3, 7)
+      const r = ri(4, 9)
+      return { text: `□ − ${b} ＝ ${r}　□に はいる かずは？`, correct: `${b + r}`, wrongs: wrong(b + r) }
+    }),
   ],
+
+  // ===== 2年 九九 =====
   'keisan-2': [
-    P('kuku', '6 × 7 ＝ ？', '42', ['36', '48', '49']),
-    P('kuku', '8 × 4 ＝ ？', '32', ['24', '36', '28']),
-    P('kuku', '9 × 6 ＝ ？', '54', ['45', '56', '63']),
-    P('kuku', '7 × 7 ＝ ？', '49', ['42', '56', '48']),
-    P('bai', '5 の 4ばいは いくつ？', '20', ['9', '25', '16']),
-    P('bai', '3 の 8ばいは いくつ？', '24', ['11', '21', '32']),
-    P('box', '6 × □ ＝ 48　□に はいる かずは？', '8', ['7', '9', '6']),
-    P('box', '□ × 7 ＝ 35　□に はいる かずは？', '5', ['4', '6', '7']),
-    P('word', '1ふくろに あめが 4こずつ 入って います。6ふくろでは ぜんぶで なんこ？', '24こ', ['10こ', '20こ', '28こ']),
-    P('word', 'いすを 1れつに 3きゃくずつ、7れつ ならべます。いすは ぜんぶで なんきゃく？', '21きゃく', ['10きゃく', '24きゃく', '18きゃく']),
-    B('kuku', '8 × 9 ＝ ？', '72', ['63', '81', '64']),
-    B('rule', '6 × 8 の こたえは、6 × 7 の こたえより いくつ 大きい？', '6', ['8', '1', '7']),
-    B('rule', 'こたえが 36 に なる 九九は どれ？', '4 × 9', ['5 × 7', '6 × 7', '4 × 8']),
-    B('word', 'クッキーが 1はこに 5こずつ 4はこ分と、ばらで 3こ あります。ぜんぶで なんこ？', '23こ', ['20こ', '12こ', '17こ']),
-    B('review', 'ひっ算で けいさんしよう。57 ＋ 68 ＝ ？', '125', ['115', '135', '124']),
-    B('review', 'ひっ算で けいさんしよう。92 − 38 ＝ ？', '54', ['66', '64', '46']),
+    T('kuku', () => {
+      const a = ri(2, 9)
+      const b = ri(2, 9)
+      return { text: `${a} × ${b} ＝ ？`, correct: `${a * b}`, wrongs: wrong(a * b, '', [a, -a, 1]) }
+    }),
+    T('bai', () => {
+      const a = ri(2, 9)
+      const k = ri(2, 9)
+      return { text: `${a} の ${k}ばいは いくつ？`, correct: `${a * k}`, wrongs: wrong(a * k, '', [a, -a, a + k]) }
+    }),
+    T('box', () => {
+      const a = ri(2, 9)
+      const b = ri(2, 9)
+      return { text: `${a} × □ ＝ ${a * b}　□に はいる かずは？`, correct: `${b}`, wrongs: wrong(b) }
+    }),
+    T('word', () => {
+      const a = ri(2, 8)
+      const b = ri(2, 8)
+      const thing = pick(['あめ', 'みかん', 'クッキー', 'えんぴつ'])
+      return { text: `1ふくろに ${thing}が ${a}こずつ 入って います。${b}ふくろでは ぜんぶで なんこ？`, correct: `${a * b}こ`, wrongs: wrong(a * b, 'こ', [a, -a, a + b]) }
+    }),
+    BT('kuku', () => {
+      const a = ri(6, 9)
+      const b = ri(6, 9)
+      return { text: `${a} × ${b} ＝ ？`, correct: `${a * b}`, wrongs: wrong(a * b, '', [a, -a, 1]) }
+    }),
+    BT('rule', () => {
+      const a = ri(3, 8)
+      const b = ri(3, 8)
+      return { text: `${a} × ${b + 1} の こたえは、${a} × ${b} の こたえより いくつ 大きい？`, correct: `${a}`, wrongs: wrong(a, '', [b, 1, -1]) }
+    }),
+    BT('word', () => {
+      const a = ri(3, 6)
+      const b = ri(3, 5)
+      const c = ri(2, 5)
+      return { text: `クッキーが 1はこに ${a}こずつ ${b}はこ分と、ばらで ${c}こ あります。ぜんぶで なんこ？`, correct: `${a * b + c}こ`, wrongs: wrong(a * b + c, 'こ', [a, -c, 2]) }
+    }),
+    BT('review', () => {
+      const a = ri(23, 68)
+      const b = ri(23, 68)
+      return { text: `ひっ算で けいさんしよう。${a} ＋ ${b} ＝ ？`, correct: `${a + b}`, wrongs: wrong(a + b, '', [10, -10, 1]) }
+    }),
+    BT('review', () => {
+      const b = ri(23, 45)
+      const a = b + ri(20, 50)
+      return { text: `ひっ算で けいさんしよう。${a} − ${b} ＝ ？`, correct: `${a - b}`, wrongs: wrong(a - b, '', [10, -10, 1]) }
+    }),
   ],
+
+  // ===== 3年 わり算 =====
   'keisan-3': [
-    P('div', '24 ÷ 6 ＝ ？', '4', ['3', '5', '6']),
-    P('div', '35 ÷ 5 ＝ ？', '7', ['6', '8', '5']),
-    P('div', '42 ÷ 7 ＝ ？', '6', ['5', '7', '8']),
-    P('div', '56 ÷ 8 ＝ ？', '7', ['6', '8', '9']),
-    P('amari', '17 ÷ 5 ＝ ？', '3 あまり 2', ['3 あまり 1', '2 あまり 7', '4 あまり 2']),
-    P('amari', '23 ÷ 4 ＝ ？', '5 あまり 3', ['5 あまり 2', '4 あまり 7', '6 あまり 1']),
-    P('box', '□ ÷ 6 ＝ 7　□に はいる かずは？', '42', ['36', '48', '13']),
-    P('big', '80 ÷ 4 ＝ ？', '20', ['2', '40', '24']),
-    P('big', '90 ÷ 3 ＝ ？', '30', ['3', '27', '60']),
-    P('word', 'クッキーが 18こ あります。3人で 同じかずずつ 分けると、1人分は なんこ？', '6こ', ['5こ', '7こ', '15こ']),
-    B('amari', '52 ÷ 6 ＝ ？', '8 あまり 4', ['8 あまり 2', '7 あまり 10', '9 あまり 2']),
-    B('word', '30この あめを 4人で 同じかずずつ 分けます。あまりは なんこ？', '2こ', ['1こ', '3こ', '0こ']),
-    B('review', '23 × 3 ＝ ？', '69', ['66', '63', '72']),
-    B('review', 'ひっ算で けいさんしよう。356 ＋ 287 ＝ ？', '643', ['633', '743', '543']),
-    B('review', '9999 より 1 大きい かずは？', '10000', ['10009', '9990', '100000']),
-    B('box', '54 ÷ □ ＝ 6　□に はいる かずは？', '9', ['8', '7', '6']),
+    T('div', () => {
+      const b = ri(2, 9)
+      const q = ri(2, 9)
+      return { text: `${b * q} ÷ ${b} ＝ ？`, correct: `${q}`, wrongs: wrong(q) }
+    }),
+    T('amari', () => {
+      const b = ri(3, 9)
+      const q = ri(2, 8)
+      const r = ri(1, b - 1)
+      return { text: `${b * q + r} ÷ ${b} ＝ ？`, correct: `${q} あまり ${r}`, wrongs: [`${q + 1} あまり ${r}`, `${q} あまり ${r === 1 ? 2 : r - 1}`, `${q - 1} あまり ${r}`] }
+    }),
+    T('box', () => {
+      const b = ri(2, 9)
+      const q = ri(2, 9)
+      return { text: `□ ÷ ${b} ＝ ${q}　□に はいる かずは？`, correct: `${b * q}`, wrongs: wrong(b * q, '', [b, -b, 1]) }
+    }),
+    T('big', () => {
+      const b = ri(2, 4)
+      const q = ri(2, 4) * 10
+      return { text: `${b * q} ÷ ${b} ＝ ？`, correct: `${q}`, wrongs: wrong(q, '', [10, -10, q / 10]) }
+    }),
+    T('word', () => {
+      const b = ri(2, 6)
+      const q = ri(2, 8)
+      return { text: `クッキーが ${b * q}こ あります。${b}人で 同じかずずつ 分けると、1人分は なんこ？`, correct: `${q}こ`, wrongs: wrong(q, 'こ') }
+    }),
+    BT('amari', () => {
+      const b = ri(4, 8)
+      const q = ri(5, 9)
+      const r = ri(1, b - 1)
+      return { text: `${b * q + r} ÷ ${b} ＝ ？`, correct: `${q} あまり ${r}`, wrongs: [`${q} あまり ${r === 1 ? 2 : r - 1}`, `${q + 1} あまり ${r}`, `${q - 1} あまり ${r}`] }
+    }),
+    BT('word', () => {
+      const b = ri(3, 5)
+      const total = ri(20, 35)
+      const r = total % b
+      const cands: number[] = []
+      for (let i = 0; i < b; i++) if (i !== r) cands.push(i)
+      cands.push(Math.floor(total / b))
+      const wrongs: string[] = []
+      for (const c of cands) {
+        const s = `${c}こ`
+        if (!wrongs.includes(s) && s !== `${r}こ`) wrongs.push(s)
+        if (wrongs.length === 3) break
+      }
+      return { text: `${total}この あめを ${b}人で 同じかずずつ 分けます。あまりは なんこ？`, correct: `${r}こ`, wrongs }
+    }),
+    BT('review', () => {
+      const a = ri(12, 39)
+      const b = ri(2, 4)
+      return { text: `${a} × ${b} ＝ ？`, correct: `${a * b}`, wrongs: wrong(a * b, '', [b, -b, 10]) }
+    }),
+    BT('review', () => {
+      const a = ri(234, 678)
+      const b = ri(123, 456)
+      return { text: `ひっ算で けいさんしよう。${a} ＋ ${b} ＝ ？`, correct: `${a + b}`, wrongs: wrong(a + b, '', [100, -100, 10]) }
+    }),
   ],
+
+  // ===== 4年 小数 =====
   'keisan-4': [
-    P('add', '2.5 ＋ 1.3 ＝ ？', '3.8', ['3.7', '3.9', '2.8']),
-    P('add', '4.6 ＋ 2.7 ＝ ？', '7.3', ['6.3', '7.4', '6.13']),
-    P('sub', '5.8 − 2.3 ＝ ？', '3.5', ['3.4', '2.5', '8.1']),
-    P('sub', '7.1 − 3.4 ＝ ？', '3.7', ['4.7', '3.3', '4.3']),
-    P('shikumi', '0.1 を 36こ あつめた かずは？', '3.6', ['36', '0.36', '3.06']),
-    P('shikumi', '2.9 は 0.1 を なんこ あつめた かず？', '29こ', ['2.9こ', '290こ', '9こ']),
-    P('daisho', '3.1 と 3.09 では、どちらが 大きい？', '3.1', ['3.09', 'おなじ', 'くらべられない']),
-    P('line', '数直線で 4 と 5 の あいだが 10こに 分かれて います。4 から めもり 7つ分 すすんだ かずは？', '4.7', ['4.07', '4.3', '11']),
-    P('sub', '6 − 0.8 ＝ ？', '5.2', ['5.8', '6.2', '5.92']),
-    P('shikumi', '0.1 を 10こ あつめた かずは？', '1', ['0.1', '10', '0.01']),
-    B('add', '1.05 ＋ 2.38 ＝ ？', '3.43', ['3.33', '3.53', '2.43']),
-    B('sub', '5 − 1.6 ＝ ？', '3.4', ['4.4', '3.6', '4.6']),
-    B('sub', '7.02 − 3.5 ＝ ？', '3.52', ['4.52', '3.97', '6.67']),
-    B('shikumi', '0.01 を 245こ あつめた かずは？', '2.45', ['24.5', '0.245', '245']),
-    B('daisho', 'いちばん 小さい かずは どれ？', '2.01', ['2.1', '2.15', '2.2']),
-    B('add', '3.6 に いくつ たすと 5 に なる？', '1.4', ['2.4', '1.6', '2.6']),
+    T('add', () => {
+      const x = ri(11, 49)
+      const y = ri(11, 49)
+      const f = (n: number) => (n / 10).toFixed(1)
+      return { text: `${f(x)} ＋ ${f(y)} ＝ ？`, correct: f(x + y), wrongs: wrongF((x + y) / 10, 1) }
+    }),
+    T('sub', () => {
+      const y = ri(11, 40)
+      const x = y + ri(5, 45)
+      const f = (n: number) => (n / 10).toFixed(1)
+      return { text: `${f(x)} − ${f(y)} ＝ ？`, correct: f(x - y), wrongs: wrongF((x - y) / 10, 1) }
+    }),
+    T('shikumi', () => {
+      const n = ri(11, 99)
+      return { text: `0.1 を ${n}こ あつめた かずは？`, correct: (n / 10).toFixed(1), wrongs: [`${n}`, (n / 100).toFixed(2), ((n + 1) / 10).toFixed(1)] }
+    }),
+    T('line', () => {
+      const a = ri(1, 8)
+      const k = ri(1, 9)
+      return { text: `数直線で ${a} と ${a + 1} の あいだが 10こに 分かれています。${a} から めもり ${k}つ分 すすんだ かずは？`, correct: (a + k / 10).toFixed(1), wrongs: [`${a + k}`, (a + (k + 1) / 10).toFixed(1), (a + k / 100).toFixed(2)] }
+    }),
+    T('daisho', () => {
+      const a = ri(1, 8)
+      return { text: `${a}.09 と ${a}.1 では、どちらが 大きい？`, correct: `${a}.1`, wrongs: [`${a}.09`, 'おなじ', 'くらべられない'] }
+    }),
+    BT('add', () => {
+      const x = ri(105, 380)
+      const y = ri(105, 380)
+      const f = (n: number) => (n / 100).toFixed(2)
+      return { text: `${f(x)} ＋ ${f(y)} ＝ ？`, correct: f(x + y), wrongs: wrongF((x + y) / 100, 2) }
+    }),
+    BT('sub', () => {
+      const x = ri(4, 8)
+      const y = ri(11, 39) / 10
+      return { text: `${x} − ${y.toFixed(1)} ＝ ？`, correct: (x - y).toFixed(1), wrongs: wrongF(x - y, 1) }
+    }),
+    BT('shikumi', () => {
+      const n = ri(120, 480)
+      return { text: `0.01 を ${n}こ あつめた かずは？`, correct: (n / 100).toFixed(2), wrongs: [(n / 10).toFixed(1), `${n}`, ((n + 1) / 100).toFixed(2)] }
+    }),
   ],
+
+  // ===== 5年 分数のたし算 =====
   'keisan-5': [
-    P('add', '1/3 ＋ 1/4 ＝ ？', '7/12', ['2/7', '4/12', '1/12']),
-    P('add', '1/2 ＋ 1/5 ＝ ？', '7/10', ['2/7', '6/10', '3/7']),
-    P('sub', '1/2 − 1/3 ＝ ？', '1/6', ['1/5', '1/2', '1/3']),
-    P('sub', '3/4 − 1/2 ＝ ？', '1/4', ['1/2', '1/8', '2/3']),
-    P('tsubun', '1/3 と 1/4 を 通分すると、1/3 は どうなる？', '4/12', ['3/12', '1/12', '6/12']),
-    P('yakubun', '6/8 を 約分すると？', '3/4', ['2/3', '3/8', '6/4']),
-    P('yakubun', '12/18 を 約分すると？', '2/3', ['3/4', '6/9', '1/2']),
-    P('daisho', '3/4 と 2/3 では、どちらが 大きい？', '3/4', ['2/3', 'おなじ', 'くらべられない']),
-    P('add', '2/5 ＋ 1/5 ＝ ？', '3/5', ['3/10', '2/5', '1/5']),
-    P('tsubun', '1/2 と 1/6 を 通分すると、1/2 は どうなる？', '3/6', ['2/6', '1/6', '6/12']),
-    B('add', '2/3 ＋ 1/4 ＝ ？', '11/12', ['3/7', '2/12', '3/4']),
-    B('sub', '5/6 − 1/2 ＝ ？', '1/3', ['2/3', '1/2', '4/12']),
-    B('add', '1/2 ＋ 1/3 ＋ 1/6 ＝ ？', '1', ['11/12', '5/6', '3/11']),
-    B('daisho', 'いちばん 大きい 分数は どれ？', '5/6', ['3/4', '2/3', '1/2']),
-    B('yakubun', '24/36 を 約分すると？', '2/3', ['3/4', '4/6', '12/18']),
-    B('sub', '1と1/2 − 1/2 ＝ ？', '1', ['1/2', '2', '1と1/4']),
+    T('add', () => {
+      const [d1, d2] = pick([[2, 3], [2, 4], [3, 6], [3, 4], [4, 6]])
+      const n1 = ri(1, d1 - 1)
+      const n2 = ri(1, d2 - 1)
+      const L = (d1 * d2) / gcd(d1, d2)
+      const s = n1 * (L / d1) + n2 * (L / d2)
+      const { correct, wrongs } = fracChoices(s, L, [[n1 + n2, d1 + d2], [s + 1, L], [n1 + n2, L]])
+      return { text: `${frac(n1, d1)} ＋ ${frac(n2, d2)} ＝ ？`, correct, wrongs }
+    }),
+    T('sub', () => {
+      const [d1, d2] = pick([[2, 3], [3, 4], [2, 5], [4, 6], [3, 5]])
+      const L = (d1 * d2) / gcd(d1, d2)
+      let n1 = ri(2, d1)
+      let n2 = ri(1, d2 - 1)
+      let diff = n1 * (L / d1) - n2 * (L / d2)
+      if (diff <= 0) {
+        n1 = d1 - 1
+        n2 = 1
+        diff = n1 * (L / d1) - n2 * (L / d2)
+      }
+      const { correct, wrongs } = fracChoices(diff, L, [[diff + 1, L], [n1 * (L / d1) + n2 * (L / d2), L]])
+      return { text: `${frac(n1, d1)} − ${frac(n2, d2)} ＝ ？`, correct, wrongs }
+    }),
+    T('tsubun', () => {
+      const [d1, d2] = pick([[2, 3], [3, 4], [2, 5], [3, 5], [4, 6]])
+      const n1 = ri(1, d1 - 1)
+      const L = (d1 * d2) / gcd(d1, d2)
+      return { text: `${n1}/${d1} と 1/${d2} を 通分すると、${n1}/${d1} は どうなる？`, correct: `${n1 * (L / d1)}/${L}`, wrongs: [`${n1}/${L}`, `${n1 * (L / d2)}/${L}`, `${n1}/${d1 + d2}`] }
+    }),
+    T('yakubun', () => {
+      const [n, d] = pick([[1, 2], [2, 3], [3, 4], [1, 3], [2, 5], [3, 5]])
+      const k = ri(2, 4)
+      const { correct, wrongs } = fracChoices(n, d)
+      return { text: `${n * k}/${d * k} を 約分すると？`, correct, wrongs }
+    }),
+    T('daisho', () => {
+      const big = pick(['2/3', '3/4', '4/5', '5/6', '3/5'])
+      const smalls = ['1/3', '2/5', '1/4', '3/8', '1/2'].filter((s) => s !== big).slice(0, 3)
+      return { text: `1/2 より 大きい 分数は どれ？`, correct: big, wrongs: smalls }
+    }),
+    BT('add', () => {
+      const [d1, d2] = pick([[3, 4], [2, 3], [4, 6], [3, 5], [4, 5]])
+      const n1 = ri(1, d1 - 1)
+      const n2 = ri(1, d2 - 1)
+      const L = (d1 * d2) / gcd(d1, d2)
+      const s = n1 * (L / d1) + n2 * (L / d2)
+      const { correct, wrongs } = fracChoices(s, L, [[n1 + n2, d1 + d2], [s + 1, L], [n1 + n2, L]])
+      return { text: `${frac(n1, d1)} ＋ ${frac(n2, d2)} ＝ ？`, correct, wrongs }
+    }),
+    BT('yakubun', () => {
+      const [n, d] = pick([[2, 3], [3, 4], [1, 2], [3, 5]])
+      const k = ri(4, 8)
+      const { correct, wrongs } = fracChoices(n, d)
+      return { text: `${n * k}/${d * k} を 約分すると？`, correct, wrongs }
+    }),
+    BT('daisho', () => {
+      const fracs = pick([['5/6', '3/4', '2/3', '1/2'], ['4/5', '3/4', '3/5', '1/2'], ['5/6', '2/3', '3/5', '1/3']])
+      return { text: `いちばん 大きい 分数は どれ？`, correct: fracs[0], wrongs: fracs.slice(1) }
+    }),
   ],
+
+  // ===== 6年 分数×分数・文字式 =====
   'keisan-6': [
-    P('mulInt', '2/3 × 3 ＝ ？', '2', ['2/9', '6/9', '3']),
-    P('mulInt', '3/4 × 2 ＝ ？', '3/2', ['3/8', '6/4', '2/3']),
-    P('mulFrac', '1/2 × 1/3 ＝ ？', '1/6', ['1/5', '2/3', '3/2']),
-    P('mulFrac', '2/5 × 3/4 ＝ ？', '3/10', ['6/9', '5/9', '8/15']),
-    P('divFrac', '1/2 ÷ 1/4 ＝ ？', '2', ['1/8', '1/2', '4']),
-    P('divFrac', '2/3 ÷ 1/6 ＝ ？', '4', ['1/9', '2/18', '3']),
-    P('moji', 'x ＋ 5 ＝ 12 の とき、x は いくつ？', '7', ['17', '6', '8']),
-    P('moji', 'x × 6 ＝ 42 の とき、x は いくつ？', '7', ['6', '8', '36']),
-    P('shiki', '1こ x 円の りんごを 3こ 買って、50円の はこに 入れて もらいました。代金を あらわす式は？', 'x × 3 ＋ 50', ['x × 50 ＋ 3', 'x ＋ 3 ＋ 50', 'x ÷ 3 ＋ 50']),
-    P('divFrac', '3/5 ÷ 3 ＝ ？', '1/5', ['9/5', '3/15', '5']),
-    B('divFrac', '3/4 ÷ 9/10 ＝ ？', '5/6', ['27/40', '6/5', '3/40']),
-    B('mulFrac', '2/3 × 9/8 ＝ ？', '3/4', ['18/24', '4/3', '11/24']),
-    B('mulFrac', '7/8 × 4/7 ＝ ？', '1/2', ['28/15', '11/15', '2']),
-    B('moji', 'x × 4 − 6 ＝ 18 の とき、x は いくつ？', '6', ['3', '24', '5']),
-    B('mulFrac', '1と1/2 × 2/3 ＝ ？', '1', ['3/2', '2/3', '1と1/3']),
-    B('moji', 'x ÷ 2 ＝ 3/4 の とき、x は いくつ？', '3/2', ['3/8', '1/2', '2/3']),
+    T('mulInt', () => {
+      const d = ri(3, 8)
+      const n = ri(1, d - 1)
+      const k = ri(2, 6)
+      const { correct, wrongs } = fracChoices(n * k, d, [[n + k, d], [n, d * k], [n * k + 1, d]])
+      return { text: `${n}/${d} × ${k} ＝ ？`, correct, wrongs }
+    }),
+    T('mulFrac', () => {
+      const [n1, d1, n2, d2] = [ri(1, 3), ri(2, 4), ri(1, 3), ri(2, 5)]
+      const { correct, wrongs } = fracChoices(n1 * n2, d1 * d2, [[n1 + n2, d1 + d2], [n1 * d2, d1 * n2]])
+      return { text: `${n1}/${d1} × ${n2}/${d2} ＝ ？`, correct, wrongs }
+    }),
+    T('divFrac', () => {
+      const [n1, d1, n2, d2] = [ri(1, 3), ri(2, 4), ri(1, 3), ri(2, 5)]
+      const { correct, wrongs } = fracChoices(n1 * d2, d1 * n2, [[n1 * n2, d1 * d2]])
+      return { text: `${n1}/${d1} ÷ ${n2}/${d2} ＝ ？`, correct, wrongs }
+    }),
+    T('moji', () => {
+      const a = ri(2, 9)
+      const b = ri(2, 9)
+      if (Math.random() < 0.5) return { text: `x ＋ ${a} ＝ ${a + b} の とき、x は いくつ？`, correct: `${b}`, wrongs: wrong(b, '', [a, 1, -1]) }
+      return { text: `x × ${a} ＝ ${a * b} の とき、x は いくつ？`, correct: `${b}`, wrongs: wrong(b, '', [a, 1, -1]) }
+    }),
+    T('shiki', () => {
+      const k = ri(2, 6)
+      const box = ri(30, 80)
+      return { text: `1こ x 円の おかしを ${k}こ 買って、${box}円の はこに 入れます。代金を あらわす式は？`, correct: `x × ${k} ＋ ${box}`, wrongs: [`x × ${box} ＋ ${k}`, `x ＋ ${k} ＋ ${box}`, `x ÷ ${k} ＋ ${box}`] }
+    }),
+    BT('divFrac', () => {
+      const [n1, d1, n2, d2] = [ri(2, 4), ri(3, 5), ri(3, 5), ri(4, 6)]
+      const { correct, wrongs } = fracChoices(n1 * d2, d1 * n2, [[n1 * n2, d1 * d2], [n1, d1]])
+      return { text: `${n1}/${d1} ÷ ${n2}/${d2} ＝ ？`, correct, wrongs }
+    }),
+    BT('mulFrac', () => {
+      const [n1, d1] = [ri(2, 3), ri(3, 4)]
+      const [n2, d2] = [ri(3, 5), ri(6, 8)]
+      const { correct, wrongs } = fracChoices(n1 * n2, d1 * d2, [[n1 + n2, d1 + d2], [n1 * d2, d1 * n2]])
+      return { text: `${n1}/${d1} × ${n2}/${d2} ＝ ？`, correct, wrongs }
+    }),
+    BT('moji', () => {
+      const a = ri(2, 5)
+      const x = ri(3, 8)
+      const c = ri(1, 6)
+      return { text: `x × ${a} − ${c} ＝ ${a * x - c} の とき、x は いくつ？`, correct: `${x}`, wrongs: wrong(x, '', [1, -1, a]) }
+    }),
   ],
 }

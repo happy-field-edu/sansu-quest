@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useGame } from '../game/store'
-import { playerStats, BOSS_BASE } from '../game/logic'
+import { playerStats } from '../game/logic'
 import { WORLDS } from '../data/worlds'
 import Records from './Records'
 import SoundToggle from '../components/SoundToggle'
@@ -36,9 +36,10 @@ export default function WorldSelect({
           </span>
         </div>
         <p className="mt-1 text-xs text-slate-300">
-          こうげき {stats.atk}　まもり {stats.def}　ボスに ひつような せいかい：
-          <span className="line-through">{BOSS_BASE}問</span>→<span className="text-yellow-200">{stats.bossRequired}問</span>
+          こうげき {stats.atk}　まもり {stats.def}　ちから <span className="text-yellow-200">{stats.power}</span>
+          （ボスの ひつよう問題数を −{stats.power}）
         </p>
+        <p className="mt-0.5 text-[11px] text-slate-400">※大ボスは 村が おくに いくほど、ワールドによっても つよくなる</p>
       </Win>
 
       {/* どこへゆく？ */}

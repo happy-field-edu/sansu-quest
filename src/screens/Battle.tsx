@@ -3,6 +3,7 @@ import { useGame } from '../game/store'
 import {
   playerStats,
   levelFromExp,
+  bossRequiredFor,
   PRACTICE_HP,
   EXP_CORRECT,
   EXP_PRACTICE_CLEAR,
@@ -38,7 +39,7 @@ export default function Battle({
   const enemyEmoji = isBoss ? stage.bossEmoji : stage.enemyEmoji
 
   const [startStats] = useState(() => playerStats(save))
-  const target = isBoss ? startStats.bossRequired : PRACTICE_HP
+  const target = isBoss ? bossRequiredFor(stageId, startStats.power) : PRACTICE_HP
 
   const nextProblem = () => (isBoss ? genBossProblem(stageId) : genProblem(stageId, save.skillStats))
   const [hp, setHp] = useState(startStats.maxHp)
