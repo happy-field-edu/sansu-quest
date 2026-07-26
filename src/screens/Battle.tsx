@@ -13,7 +13,6 @@ import { STAGE_BY_ID } from '../data/worlds'
 import { ITEMS } from '../data/items'
 import { genProblem, genBossProblem } from '../data/generators'
 import MemoPad from '../components/MemoPad'
-import SoundToggle from '../components/SoundToggle'
 import { sfx } from '../game/sound'
 import { Win, CommandList, Typewriter } from '../ui/Win'
 import type { Item, Problem } from '../types'
@@ -39,16 +38,24 @@ export default function Battle({
   const enemyEmoji = isBoss ? stage.bossEmoji : stage.enemyEmoji
 
   const [startStats] = useState(() => playerStats(save))
-  const target = isBoss ? bossRequiredFor(stageId, startStats.power) : PRACTICE_HP
+  // ボス戦は とちゅうで やめても つづきから（オートセーブ）。
+  // 前回の記録が このボスのものなら 引きつぐ。
+  const saved = isBoss && save.bossProgress?.stageId === stageId ? save.bossProgress : null
+  const target = isBoss ? (saved?.target ?? bossRequiredFor(stageId, startStats.power)) : PRACTICE_HP
 
   const nextProblem = () => (isBoss ? genBossProblem(stageId) : genProblem(stageId, save.skillStats))
-  const [hp, setHp] = useState(startStats.maxHp)
-  const [progress, setProgress] = useState(0)
+  const [hp, setHp] = useState(saved?.hp ?? startStats.maxHp)
+  const [progress, setProgress] = useState(saved?.answered ?? 0)
+  const [resumed] = useState(Boolean(saved))
   const [problem, setProblem] = useState<Problem>(nextProblem)
   const [phase, setPhase] = useState<Phase>('intro')
   const [selected, setSelected] = useState<number | null>(null)
   const [fx, setFx] = useState<'none' | 'hit' | 'miss'>('none')
-  const [msg, setMsg] = useState(`${enemyName}（${stage.title}）が あらわれた！`)
+  const [msg, setMsg] = useState(
+    saved
+      ? `${enemyName}との たたかいの つづきだ！（あと ${target - (saved.answered ?? 0)}問）`
+      : `${enemyName}（${stage.title}）が あらわれた！`,
+  )
   const [memoOpen, setMemoOpen] = useState(false)
   const [numInput, setNumInput] = useState('') // テンキーの入力
 
@@ -87,6 +94,8 @@ export default function Battle({
     } else {
       dispatch({ type: 'gain-exp', amount: totalExp })
     }
+    // たたかいが おわったら とちゅう記録は けす
+    if (isBoss) dispatch({ type: 'boss-progress', progress: null })
     const msgs = won
       ? [
           `${enemyName} を たおした！`,
@@ -125,7 +134,11 @@ export default function Battle({
       window.setTimeout(() => {
         setProgress(next)
         if (next >= target) finish(true)
-        else goNext()
+        else {
+          // ボス戦は 1問ごとに とちゅう記録を のこす（長いので 中断できる）
+          if (isBoss) dispatch({ type: 'boss-progress', progress: { stageId, answered: next, target, hp } })
+          goNext()
+        }
       }, 650)
     } else {
       sfx.wrong()
@@ -138,7 +151,10 @@ export default function Battle({
       window.setTimeout(() => {
         setHp(newHp)
         if (newHp <= 0) finish(false)
-        else goNext()
+        else {
+          if (isBoss) dispatch({ type: 'boss-progress', progress: { stageId, answered: progress, target, hp: newHp } })
+          goNext()
+        }
       }, 1100)
     }
   }
@@ -199,22 +215,60 @@ export default function Battle({
   const endTextDone = endIdx >= endMsgs.length
 
   return (
-    <div className={`fixed inset-0 flex flex-col items-center bg-black ${fx === 'miss' ? 'anim-shake' : ''}`}>
+    <div className={`fixed inset-0 flex flex-col items-center bg-black ${fx === 'miss' ? 'anim-shake-hard' : ''}`}>
+      {/* ミスのとき 画面を あかく つつむ */}
+      {fx === 'miss' && (
+        <div
+          className="anim-hurt-flash pointer-events-none fixed inset-0 z-50"
+          style={{ boxShadow: 'inset 0 0 120px 40px rgba(220,38,38,0.9)' }}
+        />
+      )}
       <div className="flex h-full w-full max-w-[520px] flex-col overflow-y-auto p-2">
         {/* ---- 敵エリア（フロントビュー） ---- */}
-        <div className="dq-frame relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-[#050510]">
+        <div
+          className={`dq-frame relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-[#050510] ${
+            fx === 'miss' ? 'anim-shake-hard' : ''
+          }`}
+        >
           {/* 戦闘背景（うずまく闇） */}
           <div className="pointer-events-none absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 40%, #24244a 0%, #050510 70%)' }} />
           <p className="font-dot z-10 text-sm text-slate-300">
             {isBoss ? '👑 大ボスせん' : '⚔️ たたかい'}　EXP＋{expShown}
+            {resumed && <span className="ml-2 text-yellow-200">▶つづきから</span>}
           </p>
-          <div className={`relative z-10 my-1 ${fx === 'hit' ? 'anim-hit' : 'anim-floaty'} ${isBoss ? 'text-[7rem]' : 'text-8xl'}`}>
-            {enemyEmoji}
+          <div className={`relative z-10 my-1 ${isBoss ? 'text-[7rem]' : 'text-8xl'}`}>
+            {/* モンスター本体（せいかいで 白く点滅しながら のけぞる） */}
+            <span className={`inline-block ${fx === 'hit' ? 'anim-damaged' : 'anim-floaty'}`}>{enemyEmoji}</span>
+            {/* 斬撃エフェクト */}
             {fx === 'hit' && (
               <>
                 <div className="anim-flashfx pointer-events-none absolute inset-0 rounded-full bg-white" />
-                <div className="anim-slash pointer-events-none absolute top-1/2 left-1/2 h-2 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-transparent via-white to-transparent" />
+                {/* 1本目の 斬撃 */}
+                <div
+                  className="anim-slash-line pointer-events-none absolute top-1/2 left-1/2 h-2.5 w-48 rounded-full bg-gradient-to-r from-transparent via-white to-transparent"
+                  style={{ ['--slash-rot' as string]: '-35deg', filter: 'drop-shadow(0 0 8px #fff)' }}
+                />
+                {/* 2本目（すこし おくれて 反対むき） */}
+                <div
+                  className="anim-slash-line pointer-events-none absolute top-1/2 left-1/2 h-2 w-40 rounded-full bg-gradient-to-r from-transparent via-yellow-200 to-transparent"
+                  style={{ ['--slash-rot' as string]: '28deg', animationDelay: '0.1s', filter: 'drop-shadow(0 0 8px #fde047)' }}
+                />
+                {/* きらめき */}
+                <div
+                  className="anim-slash-burst pointer-events-none absolute top-1/2 left-1/2 h-24 w-24"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(253,224,71,0.5) 35%, transparent 70%)',
+                  }}
+                />
+                {/* ダメージ表示 */}
+                <div className="anim-popup pointer-events-none absolute -top-2 left-1/2 text-2xl">💥</div>
               </>
+            )}
+            {/* ミスのとき ゆうしゃが ダメージ */}
+            {fx === 'miss' && (
+              <div className="anim-popup font-dot pointer-events-none absolute -top-2 left-1/2 text-xl whitespace-nowrap text-red-400">
+                −{startStats.mistakeDamage}
+              </div>
             )}
           </div>
           {/* のこり問題ゲージ */}
@@ -348,9 +402,6 @@ export default function Battle({
             </Win>
           </div>
         )}
-        <div className="absolute top-3 right-3">
-          <SoundToggle />
-        </div>
       </div>
     </div>
   )

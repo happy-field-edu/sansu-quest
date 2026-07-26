@@ -3,7 +3,6 @@ import { useGame } from '../game/store'
 import { playerStats } from '../game/logic'
 import { WORLDS } from '../data/worlds'
 import Records from './Records'
-import SoundToggle from '../components/SoundToggle'
 import { Win, CommandList, Typewriter } from '../ui/Win'
 import type { WorldId } from '../types'
 
@@ -71,7 +70,6 @@ export default function WorldSelect({
 
       <div className="flex w-full max-w-md items-center justify-between">
         <p className="font-dot text-xs text-slate-400">1年生→6年生へ。まえの学年の 大ボスを たおすと 先へ すすめる</p>
-        <SoundToggle />
       </div>
     </div>
   )

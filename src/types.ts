@@ -53,6 +53,14 @@ export interface SkillStat {
   x: number
 }
 
+// 大ボス戦の とちゅう記録（オートセーブ用）。つぎに ひらいたとき つづきから たたかえる。
+export interface BossProgress {
+  stageId: string
+  answered: number // せいかいした 問題数
+  target: number // ぜんぶで 何問 こたえるか（そのときの ちからで きまる）
+  hp: number // のこりHP
+}
+
 export interface SaveData {
   exp: number
   items: string[] // 手に入れた装備の id
@@ -60,4 +68,9 @@ export interface SaveData {
   practiced: string[] // れんしゅうバトルをクリアしたステージ（装備入手ずみ）
   cleared: string[] // ボスをたおしたステージ
   skillStats: Record<string, SkillStat> // 技能べつの正誤記録
+  // ---- オートセーブ（つづきから 遊ぶための 情報） ----
+  lastWorld?: WorldId // さいごに いた ワールド
+  lastPos?: Record<string, { x: number; y: number }> // ワールドごとの 立ち位置
+  openedChests: string[] // あけた宝箱の id
+  bossProgress?: BossProgress | null // 大ボス戦の とちゅう記録
 }

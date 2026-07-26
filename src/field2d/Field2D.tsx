@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { WorldId } from '../types'
+import type { Item, WorldId } from '../types'
 import { useGame } from '../game/store'
 import { playerStats, skillLevelOf, bossBaseOf, bossRequiredFor, type SkillLevel } from '../game/logic'
 import { WORLD_BY_ID, STAGE_BY_ID } from '../data/worlds'
@@ -7,13 +7,16 @@ import { SKILLS } from '../data/generators'
 import { ITEMS } from '../data/items'
 import { sfx } from '../game/sound'
 import { onTick } from '../lib/ticker'
-import SoundToggle from '../components/SoundToggle'
+import FieldMenu from './FieldMenu'
+import MiniMap from './MiniMap'
+import Records from '../screens/Records'
 import { Win, CommandList, Typewriter } from '../ui/Win'
 import { THEMES_2D, ZONE_NAMES } from './config2d'
-import { buildWorldMap, isWalkable, startPos, gradeOfRow, MAP_W, MAP_H, type FieldMonster } from './map'
+import { buildWorldMap, isWalkable, startPos, gradeOfRow, MAP_W, MAP_H, type FieldMonster, type Chest } from './map'
 
 const TILE = 32
-const VIEW_H = 13 // 表示するたてマス数
+const VIEW_W = 15 // 画面に見える よこマス数（マップ36マスの一部だけ見える）
+const VIEW_H = 13 // 画面に見える たてマス数
 
 type Dir = 'up' | 'down' | 'left' | 'right'
 const DELTA: Record<Dir, [number, number]> = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }
@@ -64,13 +67,18 @@ export default function Field2D({
   onEquip: () => void
   onBattle: (stageId: string, mode: 'practice' | 'boss') => void
 }) {
-  const { save } = useGame()
+  const { save, dispatch } = useGame()
   const stats = playerStats(save)
   const world = WORLD_BY_ID[worldId]
   const theme = THEMES_2D[worldId]
   const map = useMemo(() => buildWorldMap(worldId), [worldId])
 
-  const [pos, setPos] = useState(() => startPos(save, worldId))
+  // 立ち位置：まえに このワールドで いた場所から さいかいする（オートセーブ）
+  const [pos, setPos] = useState(() => {
+    const saved = save.lastPos?.[worldId]
+    if (saved && isWalkable(map, save, worldId, saved.x, saved.y)) return saved
+    return startPos(save, worldId)
+  })
   const [facing, setFacing] = useState<Dir>('up')
   const facingRef = useRef<Dir>('up')
   facingRef.current = facing
@@ -84,6 +92,15 @@ export default function Field2D({
   const dialogRef = useRef(dialog)
   dialogRef.current = dialog
   const dlgIdxRef = useRef(0)
+  // メニューウィンドウ（Xキー／メニューボタン）
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(false)
+  menuRef.current = menuOpen
+  const [records, setRecords] = useState(false)
+  // 宝箱の 獲得演出
+  const [treasure, setTreasure] = useState<{ item: Item; already: boolean } | null>(null)
+  const treasureRef = useRef(treasure)
+  treasureRef.current = treasure
 
   const posRef = useRef(pos)
   posRef.current = pos
@@ -115,6 +132,12 @@ export default function Field2D({
     sfx.encounter()
     setEncounterFx({ stageId, mode })
   }
+
+  // 立ち位置の オートセーブ（歩くたびに 記録。つぎに ひらいたとき ここから）
+  useEffect(() => {
+    dispatch({ type: 'save-pos', worldId, x: pos.x, y: pos.y })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pos.x, pos.y, worldId])
 
   // エンカウント演出（フラッシュ）が おわったら 戦闘へ
   useEffect(() => {
@@ -168,7 +191,11 @@ export default function Field2D({
 
   // むいている ほうこうを しらべる（Ⓐボタン）
   const doAction = () => {
-    if (lockRef.current || prep) return
+    if (lockRef.current || prep || menuRef.current) return
+    if (treasureRef.current) {
+      setTreasure(null) // 宝箱の 演出を とじる
+      return
+    }
     if (dialogRef.current) {
       advanceDialog()
       return
@@ -177,8 +204,26 @@ export default function Field2D({
     openTalkAt(posRef.current.x + dx, posRef.current.y + dy)
   }
 
+  // 宝箱を あける：カチッ→ファンファーレ→「〇〇をてにいれた！」
+  const openChest = (chest: Chest) => {
+    const item = ITEMS[chest.itemId]
+    if (!item) return
+    const already = save.items.includes(item.id) // もう持っている そうびか
+    sfx.chestOpen()
+    window.setTimeout(() => sfx.fanfare(), 180)
+    dispatch({ type: 'open-chest', chestId: chest.id, itemId: chest.itemId })
+    setTreasure({ item, already })
+  }
+
+  // メニューの 開閉（Xキー・メニューボタン）
+  const toggleMenu = () => {
+    if (lockRef.current || prep) return
+    if (dialogRef.current) return // 会話ちゅうは ひらかない
+    setMenuOpen((o) => !o)
+  }
+
   const tryStep = (dir: Dir) => {
-    if (lockRef.current || prep || dialogRef.current) return
+    if (lockRef.current || prep || dialogRef.current || menuRef.current || treasureRef.current) return
     setFacing(dir)
     const [dx, dy] = DELTA[dir]
     const nx = posRef.current.x + dx
@@ -191,6 +236,17 @@ export default function Field2D({
       else triggerEncounter(hit.stageId, 'practice')
       return
     }
+    // 宝箱に ぶつかった → あける
+    const chest = map.chests.find((c) => c.x === nx && c.y === ny)
+    if (chest) {
+      if (save.openedChests.includes(chest.id)) {
+        setBanner('からっぽの たからばこだ…')
+        bannerTimer.current = 1.8
+      } else {
+        openChest(chest)
+      }
+      return
+    }
     // むらびと・立て札に ぶつかった → 会話
     if (openTalkAt(nx, ny)) return
     if (!isWalkable(map, save, worldId, nx, ny)) {
@@ -201,6 +257,7 @@ export default function Field2D({
       }
       return
     }
+    sfx.step() // あるく音
     setPos({ x: nx, y: ny })
   }
 
@@ -209,6 +266,19 @@ export default function Field2D({
     const keyDir = (k: string): Dir | null =>
       k === 'arrowup' || k === 'w' ? 'up' : k === 'arrowdown' || k === 's' ? 'down' : k === 'arrowleft' || k === 'a' ? 'left' : k === 'arrowright' || k === 'd' ? 'right' : null
     const down = (e: KeyboardEvent) => {
+      // Xキー：メニューの開閉。Escでも とじられる
+      if (e.key.toLowerCase() === 'x') {
+        e.preventDefault()
+        toggleMenu()
+        return
+      }
+      if (e.key === 'Escape' && menuRef.current) {
+        e.preventDefault()
+        setMenuOpen(false)
+        return
+      }
+      // メニュー中は 移動・しらべるを うけつけない（コマンドは CommandList が うけとる）
+      if (menuRef.current) return
       // Ⓐボタン（しらべる・会話をすすめる）
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
@@ -254,7 +324,7 @@ export default function Field2D({
         if (bannerTimer.current <= 0) setBanner(null)
       }
       // モンスターのうろつき（1マスずつ ランダム歩き）
-      if (!started.current || lockRef.current || prep || dialogRef.current) return
+      if (!started.current || lockRef.current || prep || dialogRef.current || menuRef.current) return
       let moved = false
       // 同じマスに 2ひき 入らないように、うごくたびに 占有マスを こうしんする
       const occ = new Set(monstersRef.current.map((o) => `${o.x},${o.y}`))
@@ -310,13 +380,24 @@ export default function Field2D({
         return { icon: theme.deco }
       case 'w':
         return { bg: '#2b6cb0', icon: '' } // 水（あるけない）
+      case 'c':
+        return { icon: '' } // 宝箱は スプライトで えがく
       default:
         return {} // 'n'（NPC）は草タイル＋スプライトで えがく
     }
   }
 
+  // ---- カメラ追従（2軸スクロール＋クランプ） ----
+  // ゆうしゃが つねに 画面の まん中あたりに くるように カメラを うごかし、
+  // マップの はしでは マップの そとが 見えないよう カメラを とめる（クランプ）。
+  const viewW = VIEW_W * TILE
   const viewH = VIEW_H * TILE
-  const camY = Math.max(0, Math.min(MAP_H * TILE - viewH, pos.y * TILE - viewH / 2))
+  const mapPxW = MAP_W * TILE
+  const mapPxH = MAP_H * TILE
+  const clamp = (v: number, min: number, max: number) => (max < min ? min : Math.max(min, Math.min(max, v)))
+  // ゆうしゃの 中心が ビューの 中心に くる位置 → はしで クランプ
+  const camX = clamp(pos.x * TILE + TILE / 2 - viewW / 2, 0, mapPxW - viewW)
+  const camY = clamp(pos.y * TILE + TILE / 2 - viewH / 2, 0, mapPxH - viewH)
   const prepStage = prep ? STAGE_BY_ID[prep] : null
 
   return (
@@ -324,11 +405,11 @@ export default function Field2D({
       {/* ---- フィールド（ビューポート） ---- */}
       <div
         className="dq-frame relative overflow-hidden"
-        style={{ width: MAP_W * TILE, height: viewH, maxWidth: '100vw' }}
+        style={{ width: viewW, height: viewH, maxWidth: '100vw' }}
       >
         <div
           className="absolute top-0 left-0 transition-transform duration-150 ease-linear"
-          style={{ width: MAP_W * TILE, height: MAP_H * TILE, transform: `translateY(${-camY}px)` }}
+          style={{ width: mapPxW, height: mapPxH, transform: `translate(${-camX}px, ${-camY}px)` }}
         >
           {/* タイル */}
           {map.tiles.map((row, y) => (
@@ -350,6 +431,21 @@ export default function Field2D({
                   </div>
                 )
               })}
+            </div>
+          ))}
+          {/* 宝箱（あけると あいた箱に なる） */}
+          {map.chests.map((c) => (
+            <div
+              key={c.id}
+              className="absolute top-0 left-0 flex items-center justify-center"
+              style={{ width: TILE, height: TILE, transform: `translate(${c.x * TILE}px, ${c.y * TILE}px)` }}
+            >
+              <span
+                className={save.openedChests.includes(c.id) ? 'text-xl opacity-60' : 'dq-cursor-blink text-2xl'}
+                style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
+              >
+                {save.openedChests.includes(c.id) ? '📭' : '🎁'}
+              </span>
             </div>
           ))}
           {/* むらびと（NPC） */}
@@ -390,6 +486,22 @@ export default function Field2D({
           </div>
         </div>
 
+        {/* ミニマップ（右上） */}
+        {!dialog && !menuOpen && (
+          <MiniMap
+            map={map}
+            monsters={monsters}
+            pos={pos}
+            cleared={save.cleared}
+            worldId={world.name}
+            viewW={viewW}
+            viewH={viewH}
+            camX={camX}
+            camY={camY}
+            tile={TILE}
+          />
+        )}
+
         {/* 地名バナー */}
         {banner && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2">
@@ -410,6 +522,35 @@ export default function Field2D({
               <p className="dq-cursor-blink text-right text-xs">
                 {dlgIdx < dialog.lines.length - 1 ? '▼ タップで つづく' : '▼ タップで とじる'}
               </p>
+            </Win>
+          </div>
+        )}
+
+        {/* 宝箱の 獲得演出 */}
+        {treasure && (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 p-3"
+            onClick={() => setTreasure(null)}
+          >
+            <Win className="anim-pop w-full max-w-sm p-4 text-center">
+              <div className="anim-floaty text-5xl">🎁</div>
+              <p className="mt-2 text-base leading-relaxed">
+                <Typewriter
+                  key={treasure.item.id}
+                  text={`たからばこを あけた！\n${treasure.item.emoji}「${treasure.item.name}」を てにいれた！`}
+                  speed={26}
+                />
+              </p>
+              <div className="mt-2 border-t-2 border-white/60 pt-2 text-xs leading-relaxed text-slate-200">
+                <p>{treasure.item.desc}</p>
+                <p className="mt-1 text-emerald-300">
+                  {treasure.item.atk > 0 && `⚔️ ボスの問題数 −${treasure.item.atk}　`}
+                  {treasure.item.def > 0 && `🛡️ まもり ＋${treasure.item.def}　`}
+                  {treasure.item.hp > 0 && `❤️ HP ＋${treasure.item.hp}`}
+                </p>
+                {treasure.already && <p className="mt-1 text-slate-400">（おなじ そうびを もう もっていた）</p>}
+              </div>
+              <p className="dq-cursor-blink mt-2 text-xs">▼ タップで とじる</p>
             </Win>
           </div>
         )}
@@ -463,12 +604,34 @@ export default function Field2D({
           ◀ ワールドマップへ
         </button>
         <div className="flex items-center gap-2">
-          <SoundToggle />
-          <button onClick={onEquip} className="dq-win font-dot px-3 py-1 text-xs text-white hover:text-yellow-200">
-            そうび
+          {/* メニュー（タブレットは タップ、パソコンは Xキー） */}
+          <button
+            onClick={toggleMenu}
+            className="dq-win font-dot px-4 py-1.5 text-sm text-yellow-200 hover:text-white active:translate-y-0.5"
+            style={{ touchAction: 'manipulation' }}
+          >
+            ☰ メニュー<span className="ml-1 text-[10px] text-slate-400">(X)</span>
           </button>
         </div>
       </div>
+
+      {/* ---- メニューウィンドウ ---- */}
+      {menuOpen && !encounterFx && (
+        <FieldMenu
+          stageId={zoneStage.id}
+          onClose={() => setMenuOpen(false)}
+          onEquip={() => {
+            setMenuOpen(false)
+            onEquip()
+          }}
+          onRecords={() => setRecords(true)}
+          onWorldMap={() => {
+            setMenuOpen(false)
+            onBack()
+          }}
+        />
+      )}
+      {records && <Records onClose={() => setRecords(false)} />}
 
       {/* ---- ボス前ウィンドウ（ドラクエ風コマンド） ---- */}
       {prepStage && !encounterFx && (

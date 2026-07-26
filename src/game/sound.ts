@@ -44,7 +44,47 @@ function tone(freq: number, t0: number, dur: number, type: OscillatorType = 'squ
   o.stop(start + dur + 0.02)
 }
 
+// 歩く音が 鳴りっぱなしに ならないよう、まえの音から すこし 間をあける
+let lastStep = 0
+// 歩くたびに 音の高さを すこし かえる（トコ・トコと 交互になる）
+let stepAlt = false
+
 export const sfx = {
+  // あるく：トコッ（みじかい 低い音）
+  step() {
+    if (muted) return
+    const now = performance.now()
+    if (now - lastStep < 90) return // 連打で 音が かさならないように
+    lastStep = now
+    stepAlt = !stepAlt
+    tone(stepAlt ? 180 : 150, 0, 0.05, 'square', 0.045, -40)
+  },
+  // 宝箱：カチッ（ふたを あける音）
+  chestOpen() {
+    if (muted) return
+    tone(520, 0, 0.05, 'square', 0.07)
+    tone(700, 0.05, 0.06, 'square', 0.06)
+  },
+  // アイテム獲得：ドラクエ風の ファンファーレ（ちょっと 長め）
+  fanfare() {
+    if (muted) return
+    const notes: [number, number, number][] = [
+      // [しゅうはすう, はじまり(秒), ながさ(秒)]
+      [523, 0, 0.13],
+      [523, 0.14, 0.11],
+      [523, 0.26, 0.11],
+      [523, 0.38, 0.22],
+      [415, 0.62, 0.22],
+      [466, 0.86, 0.22],
+      [523, 1.1, 0.16],
+      [466, 1.28, 0.12],
+      [523, 1.42, 0.5],
+    ]
+    notes.forEach(([f, t, d]) => {
+      tone(f, t, d, 'square', 0.1)
+      tone(f * 2, t, d, 'triangle', 0.05) // うわもの（きらびやか）
+    })
+  },
   // 正解：ピロリン↑
   correct() {
     if (muted) return

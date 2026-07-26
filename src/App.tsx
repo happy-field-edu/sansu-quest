@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { WorldId } from './types'
 import { GameProvider } from './game/store'
+import SoundToggle from './components/SoundToggle'
 import Title from './screens/Title'
 import WorldSelect from './screens/WorldSelect'
 import Field2D from './field2d/Field2D'
@@ -50,6 +51,8 @@ export default function App() {
           />
         )}
         {screen.name === 'equip' && <Equip onBack={() => setScreen(screen.from)} />}
+        {/* 音のオン・オフ（どの画面でも 右下に つねに ある） */}
+        <SoundToggle fixed />
       </div>
     </GameProvider>
   )
