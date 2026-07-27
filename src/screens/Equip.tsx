@@ -75,11 +75,13 @@ export default function Equip({ onBack }: { onBack: () => void }) {
 
       {/* もちもの */}
       <h2 className="font-dot mt-5 mb-2 text-sm text-slate-300">
-        もちもの（{save.items.length}／24）　タップでそうびする
+        もちもの（{save.items.length}こ）　タップでそうびする　🪙{save.coins}
       </h2>
       {save.items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-sm text-slate-400">
-          ステージのモンスターをたおすと そうびが手にはいるよ！
+          モンスターを たおすと 🪙コインが もらえるよ。
+          <br />
+          🏪どうぐや や たからばこで そうびを 手に入れよう！
         </div>
       ) : (
         <div className="flex flex-col gap-2">

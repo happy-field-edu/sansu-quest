@@ -19,13 +19,29 @@ export interface Command {
 export function CommandList({
   items,
   onSelect,
+  onCursor,
   active = true,
 }: {
   items: Command[]
   onSelect: (value: string) => void
+  onCursor?: (value: string, index: number) => void // カーソルが うごいたら（せつめい窓の こうしんに つかう）
   active?: boolean
 }) {
   const [cursor, setCursor] = useState(0)
+  // いまの カーソル位置。キー操作の ときに 最新の いちを 読むために ref にも もつ
+  // （親が 再レンダリングされないと keydown の クロージャが 古くなるため）
+  const cursorRef = useRef(0)
+  cursorRef.current = cursor
+
+  // カーソルの いちを 親に つたえる（items は 毎回 作りなおされるので cursor だけを 見る）
+  const cursorCb = useRef(onCursor)
+  cursorCb.current = onCursor
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+  useEffect(() => {
+    const it = itemsRef.current[cursor]
+    if (it) cursorCb.current?.(it.value, cursor)
+  }, [cursor])
 
   useEffect(() => {
     if (!active) return
@@ -38,11 +54,10 @@ export function CommandList({
         setCursor((c) => (c + 1) % items.length)
       } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
-        setCursor((c) => {
-          const it = items[c]
-          if (it && !it.disabled) onSelect(it.value)
-          return c
-        })
+        // setCursor の 更新関数の中で onSelect を よぶと、レンダリング中に
+        // 親の state を かえてしまう（React の警告＋2重実行の原因）。ref から よむ。
+        const it = items[cursorRef.current]
+        if (it && !it.disabled) onSelect(it.value)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -61,7 +76,8 @@ export function CommandList({
             it.disabled ? 'text-slate-500' : 'text-white hover:text-yellow-200'
           }`}
         >
-          <span className={`dq-cursor-blink w-4 ${cursor === i && !it.disabled ? '' : 'opacity-0'}`}>▶</span>
+          {/* えらんでいる行だけ ▶が 点めつする（点めつアニメは opacity-0 より つよいので クラスごと 切りかえる） */}
+          <span className={`w-4 ${cursor === i && !it.disabled ? 'dq-cursor-blink' : 'opacity-0'}`}>▶</span>
           <span className="flex-1">{it.label}</span>
           {it.note && <span className="text-xs text-slate-300">{it.note}</span>}
         </button>

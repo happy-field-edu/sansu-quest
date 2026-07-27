@@ -21,6 +21,8 @@ export interface Npc {
   emoji: string
   name: string
   lines: string[]
+  shop?: boolean // true なら はなすと どうぐや（ショップ）が ひらく
+  stageId?: string // どうぐやが ある村（しなものを きめる）
 }
 
 // 宝箱：ふれると そうびが 手にはいる（1回きり。あけたかは セーブに のこる）
@@ -173,6 +175,16 @@ export function buildWorldMap(worldId: WorldId): WorldMap {
     tiles[y][x] = 'n'
     npcs.push({ x, y, emoji, name, lines })
   }
+
+  // どうぐや（ショップ）：どの村にも 1けん、村の 入口ちかく（中央の道のすぐ よこ）に たてる。
+  // モンスターを たおして あつめた コインで そうびが かえる。
+  for (const stage of world.stages) {
+    const y = zoneRows(stage.grade).bottom - 2
+    const x = PATH_X + 2
+    if (tiles[y]?.[x] === undefined) continue
+    tiles[y][x] = 'n'
+    npcs.push({ x, y, emoji: '🏪', name: 'どうぐや', lines: [], shop: true, stageId: stage.id })
+  }
   const z1 = ZONE_NAMES[world.stages[0].id]
   placeNpc(1, PATH_X - 3, 3, '👵', 'むらの おばあさん', [
     `ここは 1ねんせいの 「${z1}」だよ。`,
@@ -180,7 +192,8 @@ export function buildWorldMap(worldId: WorldId): WorldMap {
   ])
   placeNpc(1, PATH_X + 4, 6, '👨‍🌾', 'むらびと', [
     'そうびを つよくすると、ボスを たおすのに ひつような もんだいの かずが へるぞ！',
-    'モンスターを たおして そうびを あつめるのじゃ。',
+    'モンスターを たおすと 🪙コインが もらえる。\nすぐ そこの 🏪どうぐやで そうびが かえるぞ！',
+    'とくに ぼうぐは 大じだ。まもりが 0の ままだと 大ボスの こうげきで 1回で やられてしまう。',
   ])
   placeNpc(1, PATH_X - 9, 7, '🧓', 'ものしり じいさん', [
     'マップは ひろいぞ。右上の ミニマップを 見れば、いまの ばしょと 👑ボスの ばしょが わかる。',

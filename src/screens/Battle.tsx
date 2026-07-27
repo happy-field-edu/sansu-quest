@@ -10,6 +10,8 @@ import {
   EXP_CORRECT,
   EXP_PRACTICE_CLEAR,
   EXP_BOSS_CLEAR,
+  COIN_CORRECT,
+  coinClearBonus,
 } from '../game/logic'
 import { STAGE_BY_ID } from '../data/worlds'
 import { ITEMS } from '../data/items'
@@ -75,6 +77,9 @@ export default function Battle({
   const [endIdx, setEndIdx] = useState(0)
   const expRef = useRef(0)
   const [expShown, setExpShown] = useState(0)
+  // コイン：1問 せいかいするたび たまる（まけても せいかいぶんは もらえる）
+  const coinRef = useRef(0)
+  const [coinShown, setCoinShown] = useState(0)
 
   const remaining = target - progress
 
@@ -100,14 +105,17 @@ export default function Battle({
   function finish(won: boolean) {
     const clearBonus = won ? (isBoss ? EXP_BOSS_CLEAR : EXP_PRACTICE_CLEAR) : 0
     const totalExp = expRef.current + clearBonus
+    // コイン：せいかいぶん ＋ たおしたときの ボーナス
+    const totalCoins = coinRef.current + (won ? coinClearBonus(stageId, isBoss) : 0)
     const levelBefore = levelFromExp(save.exp).level
     const levelAfter = levelFromExp(save.exp + totalExp).level
+    // 大ボスに はじめて かつと、その村の そうびが ごほうびで もらえる
     let drop: Item | null = null
     if (won) {
-      if (!isBoss && !save.practiced.includes(stageId)) drop = ITEMS[stage.itemId]
-      dispatch({ type: isBoss ? 'boss-clear' : 'practice-clear', stageId, exp: totalExp })
+      if (isBoss && !save.cleared.includes(stageId)) drop = ITEMS[stage.itemId]
+      dispatch({ type: isBoss ? 'boss-clear' : 'practice-clear', stageId, exp: totalExp, coins: totalCoins })
     } else {
-      dispatch({ type: 'gain-exp', amount: totalExp })
+      dispatch({ type: 'gain-exp', amount: totalExp, coins: totalCoins })
     }
     // たたかいが おわったら とちゅう記録は けす
     if (isBoss) dispatch({ type: 'boss-progress', progress: null })
@@ -115,11 +123,16 @@ export default function Battle({
       ? [
           `${enemyName} を たおした！`,
           `けいけんち ${totalExp} かくとく！`,
+          `🪙 コインを ${totalCoins}まい てにいれた！`,
           ...(drop ? [`そうび「${drop.emoji}${drop.name}」を てにいれた！`] : []),
           ...(levelAfter > levelBefore ? [`ゆうしゃは レベル${levelAfter}に あがった！`] : []),
           ...(won && isBoss ? [stage.grade < 6 ? `${stage.grade + 1}年生への もんが ひらいた！` : 'このワールドを せいはした！'] : []),
         ]
-      : [`ゆうしゃは たおれてしまった…`, `でも けいけんち ${totalExp} は もらえた！ そうびを ととのえて もういちど！`]
+      : [
+          `ゆうしゃは たおれてしまった…`,
+          `でも けいけんち ${totalExp} と 🪙コイン ${totalCoins}まいは もらえた！`,
+          `🏪どうぐやで そうびを ととのえて もういちど！`,
+        ]
     setEndMsgs(msgs)
     setEndIdx(0)
     setPhase(won ? 'win' : 'lose')
@@ -127,6 +140,7 @@ export default function Battle({
       if (levelAfter > levelBefore) sfx.levelup()
       else sfx.victory()
       if (drop) sfx.drop()
+      else window.setTimeout(() => sfx.coin(), 260)
     }
   }
 
@@ -145,6 +159,8 @@ export default function Battle({
       setMsg(`せいかい！ ${enemyName}に こうげき！`)
       expRef.current += EXP_CORRECT
       setExpShown(expRef.current)
+      coinRef.current += COIN_CORRECT
+      setCoinShown(coinRef.current)
       const next = progress + 1
       window.setTimeout(() => {
         setProgress(next)
@@ -197,7 +213,9 @@ export default function Battle({
   }
 
   function flee() {
-    if (expRef.current > 0) dispatch({ type: 'gain-exp', amount: expRef.current })
+    // にげても、せいかいした ぶんの けいけんち と コインは もらえる
+    if (expRef.current > 0 || coinRef.current > 0)
+      dispatch({ type: 'gain-exp', amount: expRef.current, coins: coinRef.current })
     onExit()
   }
 
@@ -248,7 +266,7 @@ export default function Battle({
           {/* 戦闘背景（うずまく闇） */}
           <div className="pointer-events-none absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 40%, #24244a 0%, #050510 70%)' }} />
           <p className="font-dot z-10 text-sm text-slate-300">
-            {isBoss ? '👑 大ボスせん' : '⚔️ たたかい'}　EXP＋{expShown}
+            {isBoss ? '👑 大ボスせん' : '⚔️ たたかい'}　EXP＋{expShown}　<span className="text-yellow-200">🪙＋{coinShown}</span>
             {resumed && <span className="ml-2 text-yellow-200">▶つづきから</span>}
           </p>
           <div className={`relative z-10 my-1 ${isBoss ? 'text-[7rem]' : 'text-8xl'}`}>

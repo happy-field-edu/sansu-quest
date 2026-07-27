@@ -118,4 +118,23 @@ export const sfx = {
     if (muted) return
     ;[784, 988, 1319, 1568].forEach((f, i) => tone(f, i * 0.07, 0.12, 'triangle', 0.12))
   },
+  // コインゲット：チャリン
+  coin() {
+    if (muted) return
+    tone(1319, 0, 0.08, 'square', 0.09)
+    tone(1976, 0.06, 0.14, 'square', 0.07)
+  },
+  // かいもの：チャリン♪（レジの音）
+  buy() {
+    if (muted) return
+    tone(988, 0, 0.1, 'square', 0.09)
+    tone(1319, 0.08, 0.1, 'square', 0.09)
+    ;[1568, 1976].forEach((f, i) => tone(f, 0.18 + i * 0.09, 0.18, 'triangle', 0.1))
+  },
+  // コインが たりない：ぶぶー（やさしめ）
+  nope() {
+    if (muted) return
+    tone(330, 0, 0.14, 'triangle', 0.08)
+    tone(247, 0.13, 0.2, 'triangle', 0.08)
+  },
 }

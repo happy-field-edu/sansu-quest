@@ -52,6 +52,14 @@ export default function FieldMenu({
               まもり <span className="text-yellow-200">{stats.def}</span>
             </p>
           </div>
+          {/* ---- もっている コイン ---- */}
+          <div className="mt-2 flex items-center justify-between border-t-2 border-white/60 pt-2">
+            <span className="text-xs text-slate-300">もっている コイン</span>
+            <span className="font-dot text-xl text-yellow-200">🪙 {save.coins}</span>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            モンスターを たおすと もらえる。🏪どうぐやで そうびが かえるよ。
+          </p>
 
           {/* ---- そうびで ボスが よわくなる しくみ ---- */}
           <div className="mt-2 border-t-2 border-white/60 pt-2">
@@ -107,7 +115,7 @@ export default function FieldMenu({
             })}
           </div>
           <p className="mt-1.5 border-t-2 border-white/60 pt-1.5 text-[11px] text-slate-300">
-            もちもの {save.items.length}／24　｜　たおしたボス {save.cleared.length}／24
+            もちもの {save.items.length}こ　｜　たおしたボス {save.cleared.length}／24
           </p>
         </Win>
 

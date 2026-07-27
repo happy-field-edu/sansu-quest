@@ -10,6 +10,7 @@ export interface Item {
   atk: number // ボスをたおすのに必要な問題数を減らす
   def: number // まちがえたときのダメージを減らす
   hp: number // さいだいHPを増やす
+  price: number // どうぐや（ショップ）での ねだん（コイン）
   desc: string
 }
 
@@ -63,6 +64,7 @@ export interface BossProgress {
 
 export interface SaveData {
   exp: number
+  coins: number // もっている コイン（モンスターを たおすと もらえる／どうぐやで つかう）
   items: string[] // 手に入れた装備の id
   equipped: Partial<Record<Slot, string>>
   practiced: string[] // れんしゅうバトルをクリアしたステージ（装備入手ずみ）

@@ -105,3 +105,12 @@ export const PRACTICE_HP = 5 // れんしゅうモンスターは 5問正解で�
 export const EXP_CORRECT = 4 // 1問正解ごとの経験値
 export const EXP_PRACTICE_CLEAR = 20
 export const EXP_BOSS_CLEAR = 80
+
+// ---- コイン（どうぐやで そうびを かう おかね） ----
+// 1問 せいかいするたび もらえる。まけても せいかいぶんは もらえる。
+export const COIN_CORRECT = 3
+// たおしたときの ボーナス。おくの村ほど 多い（何回でも もらえる＝コインかせぎ）
+export const coinClearBonus = (stageId: string, isBoss: boolean): number => {
+  const grade = STAGE_BY_ID[stageId]?.grade ?? 1
+  return isBoss ? 50 + grade * 30 : 10 + grade * 5
+}

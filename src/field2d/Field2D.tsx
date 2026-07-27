@@ -18,6 +18,7 @@ import { onTick } from '../lib/ticker'
 import FieldMenu from './FieldMenu'
 import MiniMap from './MiniMap'
 import Records from '../screens/Records'
+import Shop from '../screens/Shop'
 import { Win, CommandList, Typewriter } from '../ui/Win'
 import { THEMES_2D, ZONE_NAMES } from './config2d'
 import { buildWorldMap, isWalkable, startPos, gradeOfRow, MAP_W, MAP_H, type FieldMonster, type Chest } from './map'
@@ -105,6 +106,10 @@ export default function Field2D({
   const menuRef = useRef(false)
   menuRef.current = menuOpen
   const [records, setRecords] = useState(false)
+  // どうぐや（ショップ）
+  const [shop, setShop] = useState<{ stageId: string; grade: number } | null>(null)
+  const shopRef = useRef(shop)
+  shopRef.current = shop
   // 宝箱の 獲得演出
   const [treasure, setTreasure] = useState<{ item: Item; already: boolean } | null>(null)
   const treasureRef = useRef(treasure)
@@ -158,6 +163,12 @@ export default function Field2D({
   const openTalkAt = (x: number, y: number): boolean => {
     const npc = map.npcs.find((n) => n.x === x && n.y === y)
     if (npc) {
+      // どうぐや：会話ではなく ショップウィンドウを ひらく
+      if (npc.shop && npc.stageId) {
+        sfx.chestOpen()
+        setShop({ stageId: npc.stageId, grade: STAGE_BY_ID[npc.stageId].grade })
+        return true
+      }
       dlgIdxRef.current = 0
       setDlgIdx(0)
       setDialog({ emoji: npc.emoji, name: npc.name, lines: npc.lines })
@@ -199,7 +210,7 @@ export default function Field2D({
 
   // むいている ほうこうを しらべる（Ⓐボタン）
   const doAction = () => {
-    if (lockRef.current || prep || menuRef.current) return
+    if (lockRef.current || prep || menuRef.current || shopRef.current) return
     if (treasureRef.current) {
       setTreasure(null) // 宝箱の 演出を とじる
       return
@@ -225,13 +236,13 @@ export default function Field2D({
 
   // メニューの 開閉（Xキー・メニューボタン）
   const toggleMenu = () => {
-    if (lockRef.current || prep) return
+    if (lockRef.current || prep || shopRef.current) return
     if (dialogRef.current) return // 会話ちゅうは ひらかない
     setMenuOpen((o) => !o)
   }
 
   const tryStep = (dir: Dir) => {
-    if (lockRef.current || prep || dialogRef.current || menuRef.current || treasureRef.current) return
+    if (lockRef.current || prep || dialogRef.current || menuRef.current || treasureRef.current || shopRef.current) return
     setFacing(dir)
     const [dx, dy] = DELTA[dir]
     const nx = posRef.current.x + dx
@@ -285,8 +296,8 @@ export default function Field2D({
         setMenuOpen(false)
         return
       }
-      // メニュー中は 移動・しらべるを うけつけない（コマンドは CommandList が うけとる）
-      if (menuRef.current) return
+      // メニュー・どうぐや中は 移動・しらべるを うけつけない（コマンドは CommandList が うけとる）
+      if (menuRef.current || shopRef.current) return
       // Ⓐボタン（しらべる・会話をすすめる）
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
@@ -332,7 +343,7 @@ export default function Field2D({
         if (bannerTimer.current <= 0) setBanner(null)
       }
       // モンスターのうろつき（1マスずつ ランダム歩き）
-      if (!started.current || lockRef.current || prep || dialogRef.current || menuRef.current) return
+      if (!started.current || lockRef.current || prep || dialogRef.current || menuRef.current || shopRef.current) return
       let moved = false
       // 同じマスに 2ひき 入らないように、うごくたびに 占有マスを こうしんする
       const occ = new Set(monstersRef.current.map((o) => `${o.x},${o.y}`))
@@ -456,7 +467,7 @@ export default function Field2D({
               </span>
             </div>
           ))}
-          {/* むらびと（NPC） */}
+          {/* むらびと（NPC）・どうぐや */}
           {map.npcs.map((n) => (
             <div
               key={`${n.x},${n.y}`}
@@ -466,6 +477,8 @@ export default function Field2D({
               <span className="text-2xl" style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}>
                 {n.emoji}
               </span>
+              {/* どうぐやは コインの めじるしを つけて 見つけやすく */}
+              {n.shop && <span className="dq-cursor-blink absolute -top-2 text-xs">🪙</span>}
             </div>
           ))}
           {/* モンスター */}
@@ -495,7 +508,7 @@ export default function Field2D({
         </div>
 
         {/* ミニマップ（右上） */}
-        {!dialog && !menuOpen && (
+        {!dialog && !menuOpen && !shop && (
           <MiniMap
             map={map}
             monsters={monsters}
@@ -574,7 +587,8 @@ export default function Field2D({
             {zoneGrade}年生・{ZONE_NAMES[zoneStage.id]}｜{zoneStage.title}
           </p>
           <p className="text-[11px] text-slate-300">
-            Lv.{stats.level}　ボス <span className="line-through">{bossBaseOf(zoneStage.id)}</span>→
+            Lv.{stats.level}　<span className="text-yellow-200">🪙{save.coins}</span>　ボス{' '}
+            <span className="line-through">{bossBaseOf(zoneStage.id)}</span>→
             <span className="text-yellow-200">{bossRequiredFor(zoneStage.id, stats.power)}問</span>
             {(SKILLS[zoneStage.id] ?? []).map((s) => {
               const { level } = skillLevelOf(save.skillStats, zoneStage.id, s.id)
@@ -641,6 +655,9 @@ export default function Field2D({
       )}
       {records && <Records onClose={() => setRecords(false)} />}
 
+      {/* ---- どうぐや（ショップ） ---- */}
+      {shop && !encounterFx && <Shop stageId={shop.stageId} grade={shop.grade} onClose={() => setShop(null)} />}
+
       {/* ---- ボス前ウィンドウ（ドラクエ風コマンド） ---- */}
       {prepStage && !encounterFx && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 p-3">
@@ -679,7 +696,10 @@ export default function Field2D({
                   {ITEMS[prepStage.itemId].emoji}
                   {save.practiced.includes(prepStage.id) ? ITEMS[prepStage.itemId].name : '？？？'}
                 </span>
-                {!save.practiced.includes(prepStage.id) && '（よしゅうで ドロップ）'}
+                が もらえる。
+              </p>
+              <p className="mt-1 text-emerald-300">
+                🪙 よしゅうバトルで コインを あつめて、🏪どうぐやで そうびを かうと ボスが よわくなるぞ！
               </p>
               {(() => {
                 const weak = (SKILLS[prepStage.id] ?? []).filter(
@@ -699,7 +719,7 @@ export default function Field2D({
                     note: `${bossRequiredFor(prepStage.id, stats.power)}もん`,
                     disabled: !save.practiced.includes(prepStage.id),
                   },
-                  { label: 'よしゅうする', value: 'practice', note: '5もん・そうびドロップ' },
+                  { label: 'よしゅうする', value: 'practice', note: '5もん・🪙コイン' },
                   { label: 'そうびを みる', value: 'equip' },
                   { label: 'にげる', value: 'close' },
                 ]}
