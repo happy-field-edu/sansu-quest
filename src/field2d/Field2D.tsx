@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Item, WorldId } from '../types'
 import { useGame } from '../game/store'
-import { playerStats, skillLevelOf, bossBaseOf, bossRequiredFor, type SkillLevel } from '../game/logic'
+import {
+  playerStats,
+  skillLevelOf,
+  bossBaseOf,
+  bossRequiredFor,
+  bossMistakeDamage,
+  bossMistakesLeft,
+  type SkillLevel,
+} from '../game/logic'
 import { WORLD_BY_ID, STAGE_BY_ID } from '../data/worlds'
 import { SKILLS } from '../data/generators'
 import { ITEMS } from '../data/items'
@@ -646,8 +654,25 @@ export default function Field2D({
                 <span className="text-yellow-200">
                   {bossBaseOf(prepStage.id)}−Lv{stats.level}−そうび{stats.atk}＝{bossRequiredFor(prepStage.id, stats.power)}問
                 </span>{' '}
-                せいかい！　ミスすると HP−{stats.mistakeDamage}。
+                せいかい！
               </p>
+              {/* 大ボスの こうげき力（防具なしは 一撃で やられる） */}
+              {(() => {
+                const dmg = bossMistakeDamage(prepStage.id, stats.def, stats.maxHp)
+                const left = bossMistakesLeft(stats.maxHp, dmg)
+                return stats.def <= 0 ? (
+                  <p className="mt-1 text-red-300">
+                    ⚠️ この大ボスの こうげきは はげしい！ ぼうぐが ないと{' '}
+                    <span className="dq-cursor-blink text-red-400">1回の ミスで やられる</span>。
+                    まず ぼうぐを そうびしよう！
+                  </p>
+                ) : (
+                  <p className="mt-1">
+                    ミスすると HP−<span className="text-red-300">{dmg}</span>（HP{stats.maxHp}／まもり{stats.def}）→ ミスできるのは{' '}
+                    <span className="text-yellow-200">{left}回</span>まで。
+                  </p>
+                )
+              })()}
               <p className="mt-1">
                 かった あかしに{' '}
                 <span className="text-yellow-200">

@@ -47,6 +47,24 @@ export function bossRequiredFor(stageId: string, power: number): number {
   return Math.max(bossMinOf(stageId), bossBaseOf(stageId) - power)
 }
 
+// ---- 大ボスの こうげき力（ミスしたとき へるHP） ----
+// ・村が おくに いくほど（学年が上がるほど）ダメージが 大きくなる
+// ・まもりが 0（防具なし）だと 一撃で たおされる
+// ・まもりが 高いほど ダメージが へって、ミスできる回数が ふえる
+export function bossMistakeDamage(stageId: string, def: number, maxHp: number): number {
+  if (def <= 0) return maxHp // 防具なしは 一撃必殺！
+  const grade = STAGE_BY_ID[stageId]?.grade ?? 1
+  // 学年が上がるほど もとの ダメージが 大きい（1年:0.46 → 6年:1.01 ぶんの HP）
+  const raw = (maxHp * (0.35 + 0.11 * grade)) / (1 + def / 8)
+  return Math.max(1, Math.min(maxHp, Math.ceil(raw)))
+}
+
+// あと何回 ミスできるか（0なら つぎの ミスで ゲームオーバー）
+export function bossMistakesLeft(hp: number, damage: number): number {
+  if (damage <= 0) return 99
+  return Math.max(0, Math.ceil(hp / damage) - 1)
+}
+
 export function playerStats(save: SaveData) {
   const { level, into, need } = levelFromExp(save.exp)
   const items = equippedItems(save)

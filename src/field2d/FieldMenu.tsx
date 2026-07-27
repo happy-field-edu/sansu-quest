@@ -1,5 +1,5 @@
 import { useGame } from '../game/store'
-import { playerStats, bossBaseOf, bossRequiredFor } from '../game/logic'
+import { playerStats, bossBaseOf, bossRequiredFor, bossMistakeDamage, bossMistakesLeft } from '../game/logic'
 import { ITEMS } from '../data/items'
 import { SLOTS } from '../types'
 import { STAGE_BY_ID } from '../data/worlds'
@@ -26,6 +26,8 @@ export default function FieldMenu({
   const stage = STAGE_BY_ID[stageId]
   const base = bossBaseOf(stageId)
   const required = bossRequiredFor(stageId, stats.power)
+  const dmg = bossMistakeDamage(stageId, stats.def, stats.maxHp)
+  const left = bossMistakesLeft(stats.maxHp, dmg)
 
   return (
     <div className="absolute inset-0 z-30 flex items-start justify-center overflow-y-auto bg-black/75 p-2" onClick={onClose}>
@@ -63,8 +65,20 @@ export default function FieldMenu({
               <span className="font-dot mx-1 text-lg text-yellow-200">→ {required}問</span>
               で たおせる！
             </p>
+            {/* 大ボスの こうげき力（防具なしは 一撃で やられる） */}
+            {stats.def <= 0 ? (
+              <p className="mt-1 text-[11px] text-red-300">
+                ⚠️ ぼうぐを つけていない！ このままでは 大ボスの こうげきを 1回 くらっただけで やられる。
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] text-slate-300">
+                この村の 大ボスの こうげき：HP−<span className="text-red-300">{dmg}</span>（まもり{stats.def}）→ ミスできるのは{' '}
+                <span className="text-yellow-200">{left}回</span>まで
+              </p>
+            )}
             <p className="mt-1 text-[11px] text-emerald-300">
               つよい そうびを つけると ちからが 上がり、ボスの ひつような もんだいが もっと へるぞ！
+              ぼうぐを つけると ミスできる 回数が ふえる。
             </p>
           </div>
         </Win>

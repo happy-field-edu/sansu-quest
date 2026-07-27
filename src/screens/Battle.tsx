@@ -4,6 +4,8 @@ import {
   playerStats,
   levelFromExp,
   bossRequiredFor,
+  bossMistakeDamage,
+  bossMistakesLeft,
   PRACTICE_HP,
   EXP_CORRECT,
   EXP_PRACTICE_CLEAR,
@@ -43,6 +45,13 @@ export default function Battle({
   const saved = isBoss && save.bossProgress?.stageId === stageId ? save.bossProgress : null
   const target = isBoss ? (saved?.target ?? bossRequiredFor(stageId, startStats.power)) : PRACTICE_HP
 
+  // ミスしたときの ダメージ。大ボスは 村が おくに いくほど 強く、
+  // 防具（まもり）が 0 なら 一撃で やられる。
+  const missDamage = isBoss
+    ? bossMistakeDamage(stageId, startStats.def, startStats.maxHp)
+    : startStats.mistakeDamage
+  const oneShot = isBoss && startStats.def <= 0 // 防具なし＝一撃死
+
   const nextProblem = () => (isBoss ? genBossProblem(stageId) : genProblem(stageId, save.skillStats))
   const [hp, setHp] = useState(saved?.hp ?? startStats.maxHp)
   const [progress, setProgress] = useState(saved?.answered ?? 0)
@@ -74,7 +83,13 @@ export default function Battle({
     window.setTimeout(() => {
       setPhase((p) => {
         if (p === 'intro') {
-          setMsg(isBoss ? `ぜんぶで ${target}問！ こたえを えらんで こうげきだ！` : 'こたえを えらんで こうげきだ！')
+          setMsg(
+            isBoss
+              ? oneShot
+                ? `ぜんぶで ${target}問！\n⚠️ぼうぐが ないと 1回でも ミスすると やられる！`
+                : `ぜんぶで ${target}問！ ミスは HP−${missDamage}。あと ${bossMistakesLeft(hp, missDamage)}回まで！`
+              : 'こたえを えらんで こうげきだ！',
+          )
           return 'fight'
         }
         return p
@@ -144,10 +159,10 @@ export default function Battle({
       sfx.wrong()
       setMsg(
         reveal
-          ? `ミス！ こたえは「${reveal}」。${startStats.mistakeDamage}の ダメージ！`
-          : `ミス！ ゆうしゃは ${startStats.mistakeDamage}の ダメージ！`,
+          ? `ミス！ こたえは「${reveal}」。${missDamage}の ダメージ！`
+          : `ミス！ ゆうしゃは ${missDamage}の ダメージ！`,
       )
-      const newHp = hp - startStats.mistakeDamage
+      const newHp = hp - missDamage
       window.setTimeout(() => {
         setHp(newHp)
         if (newHp <= 0) finish(false)
@@ -267,7 +282,7 @@ export default function Battle({
             {/* ミスのとき ゆうしゃが ダメージ */}
             {fx === 'miss' && (
               <div className="anim-popup font-dot pointer-events-none absolute -top-2 left-1/2 text-xl whitespace-nowrap text-red-400">
-                −{startStats.mistakeDamage}
+                −{missDamage}
               </div>
             )}
           </div>
@@ -367,6 +382,21 @@ export default function Battle({
               <div className="mt-1 h-2 overflow-hidden rounded-full border border-white/50 bg-slate-900">
                 <div className="h-full bg-pink-500 transition-all duration-500" style={{ width: `${(Math.max(0, hp) / startStats.maxHp) * 100}%` }} />
               </div>
+              {/* 大ボス戦：あと何回 ミスできるか（0なら つぎのミスで やられる） */}
+              {isBoss && (
+                <p className="mt-1 text-xs">
+                  {oneShot ? (
+                    <span className="dq-cursor-blink text-red-400">⚠️ ぼうぐなし！1ミスで やられる</span>
+                  ) : bossMistakesLeft(hp, missDamage) === 0 ? (
+                    <span className="dq-cursor-blink text-red-400">⚠️ あとがない！つぎ ミスしたら やられる</span>
+                  ) : (
+                    <span className="text-slate-300">
+                      ミス−{missDamage}／あと{' '}
+                      <span className="text-yellow-200">{bossMistakesLeft(hp, missDamage)}</span> 回まで
+                    </span>
+                  )}
+                </p>
+              )}
             </Win>
             <Win className="w-40 px-2 py-1">
               <CommandList
