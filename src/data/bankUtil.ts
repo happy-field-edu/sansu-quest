@@ -16,9 +16,12 @@ export const T = (skillId: string, gen: BankGen['gen']): BankGen => ({ skillId, 
 export const BT = (skillId: string, gen: BankGen['gen']): BankGen => ({ skillId, boss: true, gen })
 
 const gcd2 = (a: number, b: number): number => (b === 0 ? a : gcd2(b, a % b))
+// 約分した分数。分母が1になったら整数であらわす（「1/1」ではなく「1」）。
+// generators.ts の frac() と そろえてある。
 const reduceFrac = (n: number, d: number): string => {
   const k = gcd2(Math.abs(n), Math.abs(d)) || 1
-  return `${n / k}/${d / k}`
+  const den = d / k
+  return den === 1 ? `${n / k}` : `${n / k}/${den}`
 }
 
 // 分数 n/d の答えと、書式のそろった まちがい3つを作る。

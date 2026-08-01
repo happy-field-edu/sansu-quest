@@ -122,12 +122,14 @@ export const BANK_KEISAN: Record<string, BankGen[]> = {
       const c = ri(2, 5)
       return { text: `クッキーが 1はこに ${a}こずつ ${b}はこ分と、ばらで ${c}こ あります。ぜんぶで なんこ？`, correct: `${a * b + c}こ`, wrongs: wrong(a * b + c, 'こ', [a, -c, 2]) }
     }),
-    BT('review', () => {
+    // skillId は その単元に じっさいに ある技能を さすこと。
+    // ない技能IDにすると 正誤きろくが きろく画面に出てこなくなる。
+    BT('hissan2', () => {
       const a = ri(23, 68)
       const b = ri(23, 68)
       return { text: `ひっ算で けいさんしよう。${a} ＋ ${b} ＝ ？`, correct: `${a + b}`, wrongs: wrong(a + b, '', [10, -10, 1]) }
     }),
-    BT('review', () => {
+    BT('hissan2', () => {
       const b = ri(23, 45)
       const a = b + ri(20, 50)
       return { text: `ひっ算で けいさんしよう。${a} − ${b} ＝ ？`, correct: `${a - b}`, wrongs: wrong(a - b, '', [10, -10, 1]) }
@@ -183,12 +185,12 @@ export const BANK_KEISAN: Record<string, BankGen[]> = {
       }
       return { text: `${total}この あめを ${b}人で 同じかずずつ 分けます。あまりは なんこ？`, correct: `${r}こ`, wrongs }
     }),
-    BT('review', () => {
+    BT('kakezanH', () => {
       const a = ri(12, 39)
       const b = ri(2, 4)
       return { text: `${a} × ${b} ＝ ？`, correct: `${a * b}`, wrongs: wrong(a * b, '', [b, -b, 10]) }
     }),
-    BT('review', () => {
+    BT('hissan3', () => {
       const a = ri(234, 678)
       const b = ri(123, 456)
       return { text: `ひっ算で けいさんしよう。${a} ＋ ${b} ＝ ？`, correct: `${a + b}`, wrongs: wrong(a + b, '', [100, -100, 10]) }
@@ -311,13 +313,21 @@ export const BANK_KEISAN: Record<string, BankGen[]> = {
       const { correct, wrongs } = fracChoices(n * k, d, [[n + k, d], [n, d * k], [n * k + 1, d]])
       return { text: `${n}/${d} × ${k} ＝ ？`, correct, wrongs }
     }),
+    // ぶんぼを 先に決めて ぶんしを その下で 引く（真分数にする）。
+    // べつべつに 乱数で決めると「3/3」のような 1に等しい分数が 問題文に出てしまう。
     T('mulFrac', () => {
-      const [n1, d1, n2, d2] = [ri(1, 3), ri(2, 4), ri(1, 3), ri(2, 5)]
+      const d1 = ri(2, 4)
+      const n1 = ri(1, d1 - 1)
+      const d2 = ri(3, 5)
+      const n2 = ri(1, d2 - 1)
       const { correct, wrongs } = fracChoices(n1 * n2, d1 * d2, [[n1 + n2, d1 + d2], [n1 * d2, d1 * n2]])
       return { text: `${n1}/${d1} × ${n2}/${d2} ＝ ？`, correct, wrongs }
     }),
     T('divFrac', () => {
-      const [n1, d1, n2, d2] = [ri(1, 3), ri(2, 4), ri(1, 3), ri(2, 5)]
+      const d1 = ri(2, 4)
+      const n1 = ri(1, d1 - 1)
+      const d2 = ri(3, 5)
+      const n2 = ri(1, d2 - 1)
       const { correct, wrongs } = fracChoices(n1 * d2, d1 * n2, [[n1 * n2, d1 * d2]])
       return { text: `${n1}/${d1} ÷ ${n2}/${d2} ＝ ？`, correct, wrongs }
     }),
@@ -333,13 +343,18 @@ export const BANK_KEISAN: Record<string, BankGen[]> = {
       return { text: `1こ x 円の おかしを ${k}こ 買って、${box}円の はこに 入れます。代金を あらわす式は？`, correct: `x × ${k} ＋ ${box}`, wrongs: [`x × ${box} ＋ ${k}`, `x ＋ ${k} ＋ ${box}`, `x ÷ ${k} ＋ ${box}`] }
     }),
     BT('divFrac', () => {
-      const [n1, d1, n2, d2] = [ri(2, 4), ri(3, 5), ri(3, 5), ri(4, 6)]
+      const d1 = ri(4, 6)
+      const n1 = ri(2, d1 - 1)
+      const d2 = ri(5, 7)
+      const n2 = ri(3, d2 - 1)
       const { correct, wrongs } = fracChoices(n1 * d2, d1 * n2, [[n1 * n2, d1 * d2], [n1, d1]])
       return { text: `${n1}/${d1} ÷ ${n2}/${d2} ＝ ？`, correct, wrongs }
     }),
     BT('mulFrac', () => {
-      const [n1, d1] = [ri(2, 3), ri(3, 4)]
-      const [n2, d2] = [ri(3, 5), ri(6, 8)]
+      const d1 = ri(4, 5)
+      const n1 = ri(2, d1 - 1)
+      const d2 = ri(6, 8)
+      const n2 = ri(3, d2 - 1)
       const { correct, wrongs } = fracChoices(n1 * n2, d1 * d2, [[n1 + n2, d1 + d2], [n1 * d2, d1 * n2]])
       return { text: `${n1}/${d1} × ${n2}/${d2} ＝ ？`, correct, wrongs }
     }),

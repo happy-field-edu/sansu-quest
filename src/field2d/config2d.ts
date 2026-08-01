@@ -1,6 +1,5 @@
-import type { WorldId } from '../types'
-
-// 2Dフィールドの設定：ゾーン名（ドラクエ風の地名）とワールドごとの配色
+// 2Dフィールドの設定：ゾーン名（ドラクエ風の地名）
+// ※ワールドごとの色は ドット絵パレット（src/pixel/theme.ts）に うつした
 
 export const ZONE_NAMES: Record<string, string> = {
   'keisan-1': 'たしざんの村',
@@ -27,22 +26,6 @@ export const ZONE_NAMES: Record<string, string> = {
   'kankei-4': '変わり方の風の谷',
   'kankei-5': '割合の市場',
   'kankei-6': '比例の星空',
-}
-
-export interface Theme2D {
-  grass: string
-  grass2: string // 市松もようの2色め
-  path: string
-  tree: string // 木・障害物の絵文字
-  deco: string // かざりの絵文字（水晶・花など）
-  water?: string
-}
-
-export const THEMES_2D: Record<WorldId, Theme2D> = {
-  keisan: { grass: '#4c7a3a', grass2: '#528140', path: '#c9b285', tree: '🌳', deco: '🌼' },
-  ryou: { grass: '#3f7a4a', grass2: '#458350', path: '#bfa878', tree: '🌲', deco: '🍄' },
-  zukei: { grass: '#4a6a8a', grass2: '#507091', path: '#cfd8e3', tree: '🌲', deco: '💎' },
-  kankei: { grass: '#5a4a7a', grass2: '#615081', path: '#b7a6d6', tree: '🌳', deco: '🔮' },
 }
 
 // シード付き乱数（マップ・モンスター配置を毎回おなじにする）

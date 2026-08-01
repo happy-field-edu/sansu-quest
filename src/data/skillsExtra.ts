@@ -509,7 +509,10 @@ export const SKILLS_EXTRA: Record<string, Skill[]> = {
         const a = ri(11, 49) / 10
         const b = ri(11, 29) / 10
         const ans = Math.round(a * b * 100) / 100
-        return mc(`${a.toFixed(1)} × ${b.toFixed(1)} ＝ ？`, `${ans}`, [`${Math.round(a * b * 10) / 10}`, `${(a + b).toFixed(1)}`, `${ans * 10}`])
+        // ans * 10 を そのまま 文字にすると 3.24×10 が
+        // 「32.400000000000006」に なる（小数の 計算ごさ）。かならず 丸める
+        const times10 = Math.round(ans * 1000) / 100
+        return mc(`${a.toFixed(1)} × ${b.toFixed(1)} ＝ ？`, `${ans}`, [`${Math.round(a * b * 10) / 10}`, `${(a + b).toFixed(1)}`, `${times10}`])
       }
       const b = pick([0.2, 0.4, 0.5, 0.8, 2.5])
       const ans = ri(2, 9)
@@ -573,9 +576,12 @@ export const SKILLS_EXTRA: Record<string, Skill[]> = {
       )
     }),
     S('yoseki', '容積・内のり', () => {
-      const a = ri(10, 30)
-      const b = ri(10, 30)
-      const c = ri(5, 20)
+      // たて・よこを 10の倍数、深さを 5の倍数にして 体積を 500の倍数にする。
+      // ばらばらの数にすると 18×23×7＝2898cm³＝2.898L のように
+      // 小数第3位まで ある答えになり、5年生の 問題として むずかしすぎる
+      const a = ri(1, 3) * 10
+      const b = ri(1, 3) * 10
+      const c = ri(1, 4) * 5
       const cm3 = a * b * c
       return mc(`内のりが たて${a}cm・よこ${b}cm・深さ${c}cm の 水そう。いっぱいに 入る 水は 何L？`, `${cm3 / 1000}L`, [
         `${cm3}L`,
@@ -685,11 +691,12 @@ export const SKILLS_EXTRA: Record<string, Skill[]> = {
   'kankei-6': [
     S('hinoati', '比の値', () => {
       const a = ri(2, 9)
-      const b = ri(2, 9)
+      // a と b が おなじだと「6 : 6」という 意味のない比（比の値=1）になるので ずらす
+      let b = ri(2, 9)
+      if (b === a) b = a === 9 ? 2 : a + 1
       return mc(`${a} : ${b} の 比の値は？`, frac(a, b), [frac(b, a), `${a * b}`, `${a + b}`])
     }),
     S('hibunpai', '比例配分', () => {
-      const total = pick([600, 800, 1000, 1200, 1500])
       const [x, y] = pick([
         [2, 3],
         [3, 5],
@@ -697,7 +704,12 @@ export const SKILLS_EXTRA: Record<string, Skill[]> = {
         [3, 2],
         [4, 1],
       ])
-      const part = (total * x) / (x + y)
+      // 「1つ分」を先に決めて 合計を 比の和の倍数にする。
+      // 合計を 先に決めると 1500円を 3:5 に分ける（÷8）で 187.5円 のように
+      // わりきれず、小学生の 答えに ならない
+      const one = pick([100, 150, 200, 250, 300])
+      const total = one * (x + y)
+      const part = one * x
       return mc(`${total}円を ${x} : ${y} に 分けます。多い ほうでは なく、${x} に あたる 分は なん円？`, `${part}円`, [
         `${total - part}円`,
         `${total / (x + y)}円`,

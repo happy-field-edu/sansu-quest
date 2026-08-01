@@ -1,78 +1,17 @@
 import type { Problem } from '../types'
 import { BANK } from './bank'
 import { SKILLS_EXTRA } from './skillsExtra'
+// 生成ヘルパーは genUtil に1本化してある。
+// 以前は この2ファイルが 同じ ri/pick/shuffle/mc/frac を べつべつに持っていて、
+// かたほうだけ直すと もう一方に バグが残った（「1/1」「2/1」が出たのは これが原因）。
+import { S, ri, pick, shuffle, mc, gcd, frac, type Skill } from './genUtil'
 
 // 各単元を評価規準ベースの「技能」に細分化し、技能ごとに問題を生成する。
 // 例）2年「長さとかさ」→ たんい変換 / かさのたんい / 長さの計算 / 大小くらべ / たんいえらび
 
-// ---- ヘルパー ----
-const ri = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1))
-const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
+export type { Skill } from './genUtil'
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-// 正解の書式（単位・記号・小数のけた数）を保ったまま、末尾の数だけずらした誤答をつくる。
-// まちがい候補が重複や正解との衝突でへったときの穴うめ用。
-// 単位のない裸の数字をまぜると、それだけが浮いて 問題を解かずに消去法で当てられてしまう。
-function nearMiss(ans: string, taken: string[]): string | null {
-  const m = /^(.*?)(\d+(?:\.\d+)?)(\D*)$/.exec(ans)
-  if (!m) return null // 数をふくまない答え（「えんぴつ」「正方形」など）
-  const [, head, numStr, tail] = m
-  const decimals = numStr.includes('.') ? numStr.split('.')[1].length : 0
-  const step = decimals === 0 ? 1 : Number((10 ** -decimals).toFixed(decimals))
-  const n = Number(numStr)
-  for (let k = 1; k <= 20; k++) {
-    for (const sign of [1, -1]) {
-      const v = n + sign * k * step
-      if (v <= 0) continue // 小学校では負の数を出さない
-      const cand = head + v.toFixed(decimals) + tail
-      if (cand !== ans && !taken.includes(cand)) return cand
-    }
-  }
-  return null
-}
-
-// 正解1つ + まちがい候補から3つ選んで4択にする
-function mc(text: string, answer: string | number, wrongCandidates: (string | number)[]): Problem {
-  const ans = String(answer)
-  const wrongs: string[] = []
-  for (const w of wrongCandidates.map(String)) {
-    if (w !== ans && !wrongs.includes(w)) wrongs.push(w)
-    if (wrongs.length === 3) break
-  }
-  while (wrongs.length < 3) {
-    const filler = nearMiss(ans, wrongs)
-    if (!filler) break
-    wrongs.push(filler)
-  }
-  const choices = shuffle([ans, ...wrongs])
-  return { text, choices, answer: choices.indexOf(ans) }
-}
-
-const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
-// 約分した分数。分母が1になったら整数であらわす（「1/1」ではなく「1」）
-const frac = (n: number, d: number): string => {
-  const k = gcd(n, d)
-  const den = d / k
-  return den === 1 ? `${n / k}` : `${n / k}/${den}`
-}
 const fmtTime = (h: number, m: number) => (m === 0 ? `${h}時` : `${h}時${m}分`)
-
-// ---- 技能の定義 ----
-export interface Skill {
-  id: string
-  name: string // 子どもに見せる技能名
-  gen: () => Problem
-}
-
-const S = (id: string, name: string, gen: () => Problem): Skill => ({ id, name, gen })
 
 const SKILLS_BASE: Record<string, Skill[]> = {
   // ================= 数と計算 =================
@@ -91,7 +30,9 @@ const SKILLS_BASE: Record<string, Skill[]> = {
       const a = ri(2, 5)
       const b = ri(1, 5)
       const c = ri(1, a + b - 1)
-      return mc(`${a} ＋ ${b} − ${c} ＝ ？`, a + b - c, [a + b - c + 1, a + b - c - 1, a + b + c, a - b + c])
+      // a-b+c は負になることがあり sanitize でどうせ捨てられる。
+      // かわりに a+b（ひくのを わすれた）を まちがい候補にする
+      return mc(`${a} ＋ ${b} − ${c} ＝ ？`, a + b - c, [a + b - c + 1, a + b - c - 1, a + b, a + b + c])
     }),
     S('box', '□をもとめる', () => {
       const total = ri(5, 10)
@@ -309,18 +250,27 @@ const SKILLS_BASE: Record<string, Skill[]> = {
       const k = ri(2, 9)
       return mc(`${n}/${d} × ${k} ＝ ？`, frac(n * k, d), [`${n + k}/${d}`, `${n}/${d * k}`, `${n * k + 1}/${d}`, '1/2'])
     }),
+    // ぶんしは かならず ぶんぼより小さくする（真分数）。
+    // n と d を べつべつに 乱数で決めると「2/2」「3/3」のような
+      // 1に等しい分数が 問題文に出てしまう。
     S('mulFrac', '分数×分数', () => {
-      const [n1, d1, n2, d2] = [ri(1, 3), ri(2, 4), ri(1, 3), ri(2, 5)]
+      const d1 = ri(2, 4)
+      const n1 = ri(1, d1 - 1)
+      const d2 = ri(2, 5)
+      const n2 = ri(1, d2 - 1)
       return mc(`${n1}/${d1} × ${n2}/${d2} ＝ ？`, frac(n1 * n2, d1 * d2), [
-        frac(n1 * d2, d1 * n2 || 1),
-        `${n1 + n2}/${d1 + d2}`,
+        frac(n1 * d2, d1 * n2), // わり算にしてしまう
+        `${n1 + n2}/${d1 + d2}`, // ぶんし・ぶんぼを たしてしまう
         `${n1 * n2 + 1}/${d1 * d2}`,
       ])
     }),
     S('divFrac', '分数÷分数', () => {
-      const [n1, d1, n2, d2] = [ri(1, 3), ri(2, 4), ri(1, 3), ri(2, 5)]
+      const d1 = ri(2, 4)
+      const n1 = ri(1, d1 - 1)
+      const d2 = ri(2, 5)
+      const n2 = ri(1, d2 - 1)
       return mc(`${n1}/${d1} ÷ ${n2}/${d2} ＝ ？`, frac(n1 * d2, d1 * n2), [
-        frac(n1 * n2, d1 * d2),
+        frac(n1 * n2, d1 * d2), // かけ算にしてしまう
         `${n1 * d2 + 1}/${d1 * n2}`,
         '1/2',
       ])
@@ -996,10 +946,15 @@ const SKILLS_BASE: Record<string, Skill[]> = {
     S('nebiki', 'ね引きの計算', () => {
       const base = ri(2, 10) * 100
       const p = pick([10, 20, 30, 50])
-      return mc(`${base}円の品物が ${p}％引きです。はらう お金は？`, `${(base * (100 - p)) / 100}円`, [
+      const pay = (base * (100 - p)) / 100
+      // p=50 のとき「ひく額」と「はらう額」が 同じで 正解と かぶるため、
+      // 定価そのままなども 候補に入れて 3つ そろえる
+      return mc(`${base}円の品物が ${p}％引きです。はらう お金は？`, `${pay}円`, [
         `${(base * p) / 100}円`,
         `${base - p}円`,
-        `${(base * (100 - p)) / 100 - 10}円`,
+        `${pay - 10}円`,
+        `${base}円`,
+        `${pay + 10}円`,
       ])
     }),
   ],
@@ -1012,7 +967,9 @@ const SKILLS_BASE: Record<string, Skill[]> = {
     }),
     S('hi', '等しい比', () => {
       const a = ri(2, 5)
-      const b = ri(2, 5)
+      // a と b が おなじだと「2 : 2」という 意味のない比になるので ずらす
+      let b = ri(2, 5)
+      if (b === a) b = a === 5 ? 2 : a + 1
       const m = ri(2, 4)
       return mc(`${a} : ${b} ＝ ${a * m} : □　□に はいる かずは？`, b * m, [a * m, b * m + 1, b + m])
     }),
@@ -1090,7 +1047,9 @@ function allDistinct(choices: string[]): boolean {
 // 正解の書式にあわせた 予備の まちがいを作る（どうしても選択肢が足りないときの保険）
 function makeFiller(correct: string, k: number): string {
   const f = /^(-?\d+)\/(\d+)$/.exec(correct)
-  if (f) return `${Math.max(1, Number(f[1]) + k)}/${Number(f[2]) + 1}`
+  // 分数は かならず frac() を通して 約分する。
+  // 生の文字列で `${n}/${d}` を組むと「4/2」のような 未約分の分数が できてしまう
+  if (f) return frac(Math.max(1, Number(f[1]) + k), Number(f[2]) + 1)
   const n = /^-?\d+(\.\d+)?/.exec(correct)
   if (n) {
     const unit = correct.replace(/^-?\d+(\.\d+)?/, '')
@@ -1155,13 +1114,16 @@ function fromBank(stageId: string, boss: boolean): Problem | null {
     if (cand.length === 4 && allDistinct(cand)) break
     r = entry.gen()
   }
-  // 採用した r で 選択肢をつくる。重複が残っていたら 数でうめる（ほぼ来ない）
+  // 採用した r で 選択肢をつくる。重複が残っていたら うめる（ほぼ来ない）。
+  // 裸の数字ではなく makeFiller で 正解と同じ書式（単位つき）に そろえる。
+  // 単位のない数字が1つだけ まざると、問題を解かずに 消去法で当てられてしまう。
   const uniq: string[] = [r.correct]
   for (const w of r.wrongs) if (!uniq.includes(w)) uniq.push(w)
-  let guard = 0
-  while (uniq.length < 4 && guard++ < 60) {
-    const filler = String(Math.floor(Math.random() * 90) + 10)
+  let guard = 1
+  while (uniq.length < 4 && guard < 60) {
+    const filler = makeFiller(r.correct, guard)
     if (!uniq.includes(filler)) uniq.push(filler)
+    guard++
   }
   const choices = shuffle(uniq.slice(0, 4))
   return {

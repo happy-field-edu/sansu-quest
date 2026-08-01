@@ -177,7 +177,18 @@ export const BANK_ZUKEI: Record<string, BankGen[]> = {
     T('menseki', () => {
       const r = pick([2, 3, 4, 5, 10])
       const area = Math.round(r * r * 3.14 * 100) / 100
-      return { text: `半径 ${r}cm の円の面積は？（半径×半径×3.14）`, correct: `${area}cm²`, wrongs: [`${Math.round(2 * r * 3.14 * 100) / 100}cm²`, `${r * r * 3}cm²`, `${r * r}cm²`] }
+      // 半径2cm のときだけ 円周(2×2×3.14)と 面積(2×2×3.14)が どちらも 12.56 で
+      // ぶつかるので、正解とかぶった候補は のぞいて うめなおす
+      const cands = [Math.round(2 * r * 3.14 * 100) / 100, r * r * 3, r * r].filter((v) => v !== area)
+      const wrongs: string[] = []
+      for (const v of cands) if (!wrongs.includes(`${v}cm²`)) wrongs.push(`${v}cm²`)
+      let k = 1
+      while (wrongs.length < 3 && k < 30) {
+        const v = Math.round((area + k * 0.5) * 100) / 100
+        if (!wrongs.includes(`${v}cm²`)) wrongs.push(`${v}cm²`)
+        k++
+      }
+      return { text: `半径 ${r}cm の円の面積は？（半径×半径×3.14）`, correct: `${area}cm²`, wrongs: wrongs.slice(0, 3) }
     }),
     T('enshu', () => {
       const d = pick([3, 4, 5, 6, 8, 10])

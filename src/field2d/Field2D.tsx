@@ -20,10 +20,14 @@ import MiniMap from './MiniMap'
 import Records from '../screens/Records'
 import Shop from '../screens/Shop'
 import { Win, CommandList, Typewriter } from '../ui/Win'
-import { THEMES_2D, ZONE_NAMES } from './config2d'
+import { ZONE_NAMES } from './config2d'
 import { buildWorldMap, isWalkable, startPos, gradeOfRow, MAP_W, MAP_H, type FieldMonster, type Chest } from './map'
+import MapCanvas from './MapCanvas'
+import { TILE } from '../pixel/px'
+import Sprite from '../pixel/Sprite'
+import { heroUrl, npcUrl, shopUrl, chestUrl, coinUrl } from '../pixel/chars'
+import { monsterUrl } from '../pixel/monsters'
 
-const TILE = 32
 const VIEW_W = 15 // 画面に見える よこマス数（マップ36マスの一部だけ見える）
 const VIEW_H = 13 // 画面に見える たてマス数
 
@@ -37,33 +41,6 @@ const CHIP_CLS: Record<SkillLevel, string> = {
   weak: 'text-red-300',
 }
 
-// ドット絵風のゆうしゃ（CSSかさねがき）
-function HeroSprite({ facing }: { facing: Dir }) {
-  return (
-    <div className="relative h-8 w-8">
-      {/* ぼうし */}
-      <div className="absolute top-[2px] left-[7px] h-[7px] w-[18px] rounded-sm bg-red-500" />
-      <div className="absolute top-0 left-[10px] h-[4px] w-[12px] rounded-sm bg-red-600" />
-      {/* かお */}
-      <div className="absolute top-[9px] left-[8px] h-[8px] w-[16px] rounded-sm bg-[#ffdfba]" />
-      {facing !== 'up' && (
-        <>
-          {(facing === 'down' || facing === 'left') && (
-            <div className="absolute top-[12px] left-[10px] h-[3px] w-[3px] bg-slate-900" />
-          )}
-          {(facing === 'down' || facing === 'right') && (
-            <div className="absolute top-[12px] left-[19px] h-[3px] w-[3px] bg-slate-900" />
-          )}
-        </>
-      )}
-      {/* からだ */}
-      <div className="absolute top-[17px] left-[9px] h-[10px] w-[14px] rounded-sm bg-blue-500" />
-      {/* あし */}
-      <div className="absolute top-[27px] left-[10px] h-[4px] w-[5px] bg-blue-800" />
-      <div className="absolute top-[27px] left-[17px] h-[4px] w-[5px] bg-blue-800" />
-    </div>
-  )
-}
 
 export default function Field2D({
   worldId,
@@ -79,8 +56,12 @@ export default function Field2D({
   const { save, dispatch } = useGame()
   const stats = playerStats(save)
   const world = WORLD_BY_ID[worldId]
-  const theme = THEMES_2D[worldId]
   const map = useMemo(() => buildWorldMap(worldId), [worldId])
+  // ひらいた もんの 行（マップを えがきなおす きっかけに つかう）
+  const openGates = useMemo(
+    () => map.gateRows.filter((g) => save.cleared.includes(`${worldId}-${g.grade}`)).map((g) => g.row).join(','),
+    [map, save.cleared, worldId],
+  )
 
   // 立ち位置：まえに このワールドで いた場所から さいかいする（オートセーブ）
   const [pos, setPos] = useState(() => {
@@ -91,6 +72,7 @@ export default function Field2D({
   const [facing, setFacing] = useState<Dir>('up')
   const facingRef = useRef<Dir>('up')
   facingRef.current = facing
+  const [walk, setWalk] = useState<0 | 1>(0) // あるく コマ（1歩ごとに 入れかわる）
   const [monsters, setMonsters] = useState<FieldMonster[]>(map.monsters)
   const [encounterFx, setEncounterFx] = useState<{ stageId: string; mode: 'practice' | 'boss' } | null>(null)
   const [prep, setPrep] = useState<string | null>(null) // ボス前ウィンドウ
@@ -277,6 +259,7 @@ export default function Field2D({
       return
     }
     sfx.step() // あるく音
+    setWalk((w) => (w === 0 ? 1 : 0)) // 足を 入れかえる
     setPos({ x: nx, y: ny })
   }
 
@@ -378,34 +361,6 @@ export default function Field2D({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, prep])
 
-  // タイルの見た目
-  const tileFace = (t: string): { bg?: string; icon?: string } => {
-    switch (t) {
-      case 'p':
-        return { bg: theme.path }
-      case 't':
-        return { icon: theme.tree }
-      case 'r':
-        return { icon: '🪨' }
-      case 'h':
-        return { icon: '🏠' }
-      case 's':
-        return { icon: '🪧' }
-      case 'f':
-        return { icon: '🚧' }
-      case 'G':
-        return { icon: '⛩️' }
-      case 'd':
-        return { icon: theme.deco }
-      case 'w':
-        return { bg: '#2b6cb0', icon: '' } // 水（あるけない）
-      case 'c':
-        return { icon: '' } // 宝箱は スプライトで えがく
-      default:
-        return {} // 'n'（NPC）は草タイル＋スプライトで えがく
-    }
-  }
-
   // ---- カメラ追従（2軸スクロール＋クランプ） ----
   // ゆうしゃが つねに 画面の まん中あたりに くるように カメラを うごかし、
   // マップの はしでは マップの そとが 見えないよう カメラを とめる（クランプ）。
@@ -430,81 +385,63 @@ export default function Field2D({
           className="absolute top-0 left-0 transition-transform duration-150 ease-linear"
           style={{ width: mapPxW, height: mapPxH, transform: `translate(${-camX}px, ${-camY}px)` }}
         >
-          {/* タイル */}
-          {map.tiles.map((row, y) => (
-            <div key={y} className="flex">
-              {row.map((t, x) => {
-                const f = tileFace(t)
-                const gateOpen = t === 'G' && isWalkable(map, save, worldId, x, y)
-                return (
-                  <div
-                    key={x}
-                    className="flex items-center justify-center text-xl leading-none select-none"
-                    style={{
-                      width: TILE,
-                      height: TILE,
-                      background: f.bg ?? ((x + y) % 2 === 0 ? theme.grass : theme.grass2),
-                    }}
-                  >
-                    {t === 'G' ? (gateOpen ? '⛩️' : '🚪') : f.icon}
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+          {/* 地形（1まいの canvas に ドット絵で えがく） */}
+          <MapCanvas worldId={worldId} map={map} openGates={openGates} />
           {/* 宝箱（あけると あいた箱に なる） */}
-          {map.chests.map((c) => (
-            <div
-              key={c.id}
-              className="absolute top-0 left-0 flex items-center justify-center"
-              style={{ width: TILE, height: TILE, transform: `translate(${c.x * TILE}px, ${c.y * TILE}px)` }}
-            >
-              <span
-                className={save.openedChests.includes(c.id) ? 'text-xl opacity-60' : 'dq-cursor-blink text-2xl'}
-                style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
-              >
-                {save.openedChests.includes(c.id) ? '📭' : '🎁'}
-              </span>
-            </div>
-          ))}
+          {map.chests.map((c) => {
+            const opened = save.openedChests.includes(c.id)
+            return (
+              <Sprite
+                key={c.id}
+                url={chestUrl(opened)}
+                className={`absolute top-0 left-0 ${opened ? 'opacity-70' : 'anim-floaty'}`}
+                style={{ transform: `translate(${c.x * TILE}px, ${c.y * TILE}px)`, filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.35))' }}
+              />
+            )
+          })}
           {/* むらびと（NPC）・どうぐや */}
           {map.npcs.map((n) => (
             <div
               key={`${n.x},${n.y}`}
-              className="absolute top-0 left-0 flex items-center justify-center"
+              className="absolute top-0 left-0"
               style={{ width: TILE, height: TILE, transform: `translate(${n.x * TILE}px, ${n.y * TILE}px)` }}
             >
-              <span className="text-2xl" style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}>
-                {n.emoji}
-              </span>
+              <Sprite
+                url={n.shop ? shopUrl() : npcUrl(n.emoji)}
+                style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.35))' }}
+              />
               {/* どうぐやは コインの めじるしを つけて 見つけやすく */}
-              {n.shop && <span className="dq-cursor-blink absolute -top-2 text-xs">🪙</span>}
+              {n.shop && (
+                <Sprite url={coinUrl()} size={TILE} className="anim-floaty absolute -top-5 left-0" />
+              )}
             </div>
           ))}
-          {/* モンスター */}
+          {/* モンスター（大ボスは 48pxで 大きく はみだして 見える） */}
           {monsters.map((m) => {
-            const stage = STAGE_BY_ID[m.stageId]
             const boss = m.kind === 'boss'
+            const size = boss ? 48 : TILE
+            const off = (TILE - size) / 2
             return (
               <div
                 key={m.id}
-                className="absolute top-0 left-0 flex items-center justify-center transition-transform duration-200 ease-linear"
-                style={{ width: TILE, height: TILE, transform: `translate(${m.x * TILE}px, ${m.y * TILE}px)` }}
+                className="absolute top-0 left-0 transition-transform duration-200 ease-linear"
+                style={{ width: TILE, height: TILE, transform: `translate(${m.x * TILE}px, ${m.y * TILE}px)`, zIndex: boss ? 2 : 1 }}
               >
-                <span className={boss ? 'text-3xl' : 'text-2xl'} style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}>
-                  {boss ? stage.bossEmoji : stage.enemyEmoji}
-                </span>
-                {boss && <span className="absolute -top-2 text-xs">👑</span>}
+                <Sprite
+                  url={monsterUrl(m.stageId, boss)}
+                  size={size}
+                  className={boss ? 'anim-floaty' : ''}
+                  style={{ position: 'absolute', left: off, top: off - (boss ? 8 : 0), filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
+                />
               </div>
             )
           })}
           {/* ゆうしゃ */}
-          <div
+          <Sprite
+            url={heroUrl(facing, walk)}
             className="absolute top-0 left-0 transition-transform duration-150 ease-linear"
-            style={{ width: TILE, height: TILE, transform: `translate(${pos.x * TILE}px, ${pos.y * TILE}px)` }}
-          >
-            <HeroSprite facing={facing} />
-          </div>
+            style={{ transform: `translate(${pos.x * TILE}px, ${pos.y * TILE}px)`, zIndex: 3, filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
+          />
         </div>
 
         {/* ミニマップ（右上） */}

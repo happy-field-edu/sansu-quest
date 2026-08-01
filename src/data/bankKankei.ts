@@ -91,15 +91,26 @@ export const BANK_KANKEI: Record<string, BankGen[]> = {
       const n = ri(2, 9)
       return { text: `ぼうグラフの 1めもりは ${k} です。めもり ${n}こ分の 大きさは？`, correct: `${k * n}`, wrongs: wrong(k * n, '', [k, -k, n]) }
     }),
+    // まちがい候補は 手で3つならべず pickWrongs にわたす。
+    // u=2, n=2 のときの u+n(=4) と u*n(=4) のように、
+    // ある数のくみあわせだけ 正解とかぶるのを 自動で のぞいてくれる。
     T('yomi', () => {
       const u = pick([2, 5, 10])
       const n = ri(2, 9)
-      return { text: `1めもりが ${u}人の ぼうグラフで、ぼうは めもり ${n}つ分。なん人？`, correct: `${u * n}人`, wrongs: [`${u * (n + 1)}人`, `${u + n}人`, `${n}人`] }
+      return {
+        text: `1めもりが ${u}人の ぼうグラフで、ぼうは めもり ${n}つ分。なん人？`,
+        correct: `${u * n}人`,
+        wrongs: pickWrongs(u * n, '人', [u * (n + 1), u + n, n]),
+      }
     }),
     T('kaku', () => {
       const u = pick([2, 5, 10])
       const n = ri(2, 9)
-      return { text: `${u * n} を あらわすには、1めもり ${u} の ぼうグラフで めもり いくつ分？`, correct: `${n}つ分`, wrongs: [`${n + 1}つ分`, `${u}つ分`, `${u * n}つ分`] }
+      return {
+        text: `${u * n} を あらわすには、1めもり ${u} の ぼうグラフで めもり いくつ分？`,
+        correct: `${n}つ分`,
+        wrongs: pickWrongs(n, 'つ分', [n + 1, u, u * n]),
+      }
     }),
     T('kurabe', () => {
       const u = pick([2, 5, 10])
@@ -111,12 +122,22 @@ export const BANK_KANKEI: Record<string, BankGen[]> = {
       const total = ri(25, 35)
       const a = ri(8, 13)
       const b = ri(7, 11)
-      return { text: `クラス${total}人に すきな 動物を 聞きました。犬${a}人、ねこ${b}人、のこりは 鳥。鳥は なん人？`, correct: `${total - a - b}人`, wrongs: [`${a + b}人`, `${total - a}人`, `${total - a - b + 2}人`] }
+      // total が a+b の ちょうど2倍のとき、a+b が 正解(total-a-b)と かぶる
+      return {
+        text: `クラス${total}人に すきな 動物を 聞きました。犬${a}人、ねこ${b}人、のこりは 鳥。鳥は なん人？`,
+        correct: `${total - a - b}人`,
+        wrongs: pickWrongs(total - a - b, '人', [a + b, total - a, total - a - b + 2]),
+      }
     }),
     BT('kaku', () => {
       const u = pick([20, 50])
       const n = ri(3, 7)
-      return { text: `ぼうの 大きさが ${u * n} でした。1めもり ${u} の グラフでは めもり いくつ分？`, correct: `${n}つ分`, wrongs: [`${n + 1}つ分`, `${u}こ分`, `${n - 1}つ分`] }
+      // 単位は ぜんぶ「つ分」で そろえる（1つだけ「こ分」だと 形のちがいで 見わけられてしまう）
+      return {
+        text: `ぼうの 大きさが ${u * n} でした。1めもり ${u} の グラフでは めもり いくつ分？`,
+        correct: `${n}つ分`,
+        wrongs: pickWrongs(n, 'つ分', [n + 1, u, n - 1]),
+      }
     }),
   ],
 
@@ -124,7 +145,12 @@ export const BANK_KANKEI: Record<string, BankGen[]> = {
   'kankei-4': [
     T('mawari', () => {
       const n = ri(2, 12)
-      return { text: `1辺が ${n}cm の正方形の まわりの長さは？`, correct: `${n * 4}cm`, wrongs: [`${n * 2}cm`, `${n * n}cm`, `${n + 4}cm`] }
+      // n=4 のとき n*n(=16) が 正解 n*4(=16) と かぶり、n*2 と n+4 も どちらも 8 になる
+      return {
+        text: `1辺が ${n}cm の正方形の まわりの長さは？`,
+        correct: `${n * 4}cm`,
+        wrongs: pickWrongs(n * 4, 'cm', [n * 2, n * n, n + 4]),
+      }
     }),
     T('hyo', () => {
       const k = ri(2, 5)
@@ -166,37 +192,72 @@ export const BANK_KANKEI: Record<string, BankGen[]> = {
     T('ryo', () => {
       const base = pick([100, 200, 300, 400, 500])
       const p = pick([10, 20, 25, 50])
-      return { text: `${base}円の ${p}％ は なん円？`, correct: `${(base * p) / 100}円`, wrongs: [`${base - p}円`, `${(base * p) / 10}円`, `${(base * p) / 100 + 10}円`] }
+      // base=100, p=50 のとき base-p(=50) が 正解(=50)と かぶる
+      return {
+        text: `${base}円の ${p}％ は なん円？`,
+        correct: `${(base * p) / 100}円`,
+        wrongs: pickWrongs((base * p) / 100, '円', [base - p, (base * p) / 10, (base * p) / 100 + 10]),
+      }
     }),
     T('wariai', () => {
       const base = pick([50, 100, 200, 400])
       const p = pick([10, 20, 25, 50])
-      return { text: `${(base * p) / 100} は ${base} の 何％？`, correct: `${p}％`, wrongs: [`${p + 10}％`, `${p / 2 > 0 ? p / 2 : 5}％`, `${p * 2}％`] }
+      // p=10 のとき p+10(=20) と p*2(=20) が 同じになる。
+      // 半分の まちがいは 25％→13％ のように 整数に そろえる
+      return {
+        text: `${(base * p) / 100} は ${base} の 何％？`,
+        correct: `${p}％`,
+        wrongs: pickWrongs(p, '％', [p + 10, p * 2, Math.round(p / 2)]),
+      }
     }),
     T('moto', () => {
       const base = pick([200, 300, 400, 500])
       const p = pick([10, 20, 50])
-      return { text: `ある ねだんの ${p}％ が ${(base * p) / 100}円 のとき、もとの ねだんは？`, correct: `${base}円`, wrongs: [`${base / 2}円`, `${base + 100}円`, `${(base * p) / 100}円`] }
+      // p=50 のとき base*p/100 と base/2 が 同じになる
+      return {
+        text: `ある ねだんの ${p}％ が ${(base * p) / 100}円 のとき、もとの ねだんは？`,
+        correct: `${base}円`,
+        wrongs: pickWrongs(base, '円', [base / 2, base + 100, (base * p) / 100]),
+      }
     }),
     T('buai', () => {
       const n = ri(1, 9)
-      if (Math.random() < 0.5) return { text: `${n}割 は 何％？`, correct: `${n * 10}％`, wrongs: [`${n}％`, `${n * 100}％`, `${n * 10 + 5}％`] }
-      return { text: `${n * 10}％ は 何割？`, correct: `${n}割`, wrongs: [`${n * 10}割`, `${n + 1}割`, `${n - 1 > 0 ? n - 1 : 10}割`] }
+      if (Math.random() < 0.5) {
+        return { text: `${n}割 は 何％？`, correct: `${n * 10}％`, wrongs: pickWrongs(n * 10, '％', [n, n * 100, n * 10 + 5]) }
+      }
+      // n=1 のとき n*10(=10) と 「n-1が0なので10」が 同じになる
+      return { text: `${n * 10}％ は 何割？`, correct: `${n}割`, wrongs: pickWrongs(n, '割', [n * 10, n + 1, n + 2]) }
     }),
     T('nebiki', () => {
       const base = ri(2, 10) * 100
       const p = pick([10, 20, 30, 50])
-      return { text: `${base}円の 品物が ${p}％引き。はらう お金は？`, correct: `${(base * (100 - p)) / 100}円`, wrongs: [`${(base * p) / 100}円`, `${base - p}円`, `${(base * (100 - p)) / 100 - 10}円`] }
+      // p=50 のとき「ひく額」と「はらう額」が 同じになり 正解と かぶる。
+      // 定価そのまま・すこし ずれた額も 候補にして うめる
+      const pay = (base * (100 - p)) / 100
+      return {
+        text: `${base}円の 品物が ${p}％引き。はらう お金は？`,
+        correct: `${pay}円`,
+        wrongs: pickWrongs(pay, '円', [(base * p) / 100, base - p, pay - 10, pay + 10, base]),
+      }
     }),
     BT('nebiki', () => {
       const base = ri(6, 15) * 100
       const p = pick([20, 25, 30])
-      return { text: `定価 ${base}円の 品物を ${p / 10}割引きで 買います。はらう お金は？`, correct: `${(base * (100 - p)) / 100}円`, wrongs: [`${(base * p) / 100}円`, `${base - p}円`, `${(base * (100 - p)) / 100 - 100}円`] }
+      const pay = (base * (100 - p)) / 100
+      return {
+        text: `定価 ${base}円の 品物を ${p / 10}割引きで 買います。はらう お金は？`,
+        correct: `${pay}円`,
+        wrongs: pickWrongs(pay, '円', [(base * p) / 100, base - p, pay - 100, pay + 100, base]),
+      }
     }),
     BT('moto', () => {
       const base = pick([200, 300, 400, 600])
       const p = pick([15, 20, 25])
-      return { text: `ある学校の ${p}％ が ${(base * p) / 100}人 のとき、学校ぜんいんは なん人？`, correct: `${base}人`, wrongs: [`${(base * p) / 100 + base}人`, `${base / 2}人`, `${(base * p) / 100}人`] }
+      return {
+        text: `ある学校の ${p}％ が ${(base * p) / 100}人 のとき、学校ぜんいんは なん人？`,
+        correct: `${base}人`,
+        wrongs: pickWrongs(base, '人', [(base * p) / 100 + base, base / 2, (base * p) / 100]),
+      }
     }),
   ],
 
@@ -209,14 +270,25 @@ export const BANK_KANKEI: Record<string, BankGen[]> = {
     }),
     T('hi', () => {
       const a = ri(2, 5)
-      const b = ri(2, 5)
+      // a と b が おなじだと「3 : 3」という 比になってしまうので ずらす
+      let b = ri(2, 5)
+      if (b === a) b = a === 5 ? 2 : a + 1
       const m = ri(2, 4)
       return { text: `${a} : ${b} ＝ ${a * m} : □　□に はいる かずは？`, correct: `${b * m}`, wrongs: wrong(b * m, '', [a * m - b * m, 1, -1]) }
     }),
     T('kantan', () => {
       const [a, b] = pick([[2, 3], [3, 4], [1, 2], [2, 5], [3, 5]])
       const k = ri(2, 6)
-      return { text: `${a * k} : ${b * k} を かんたんに すると？`, correct: `${a} : ${b}`, wrongs: [`${b} : ${a}`, `${a * k} : ${b}`, `${a + 1} : ${b}`] }
+      const correct = `${a} : ${b}`
+      // a=1, k=2 のとき a*k(=2) と a+1(=2) が 同じ比になってしまうので、
+      // 候補を 多めに ならべて かぶらない3つを えらぶ
+      // ありがちな まちがいの順: ぎゃく比 → かたほうだけ約分 → ぶんぼ側だけ ずれる
+      const cands = [`${b} : ${a}`, `${a * k} : ${b}`, `${a} : ${b + 1}`, `${a + 1} : ${b + 1}`, `${a + 1} : ${b}`]
+      const wrongs: string[] = []
+      for (const c of cands) {
+        if (wrongs.length < 3 && c !== correct && !wrongs.includes(c)) wrongs.push(c)
+      }
+      return { text: `${a * k} : ${b * k} を かんたんに すると？`, correct, wrongs }
     }),
     T('hanpirei', () => {
       const area = pick([12, 24, 36])
@@ -225,15 +297,34 @@ export const BANK_KANKEI: Record<string, BankGen[]> = {
     }),
     T('hirei', () => {
       const m = ri(2, 4)
-      const price = ri(2, 8) * 30
-      return { text: `${m}m で ${price}円の リボン。1m の ねだんは？`, correct: `${price / m}円`, wrongs: [`${price}円`, `${price * m}円`, `${price / m + 10}円`] }
+      // 1m分の ねだんを 先に決めて 合計を 出す。
+      // 合計を 先に決めると 210円÷4m＝52.5円 のように わりきれず、
+      // 小学生の 答えに ならない
+      const unit = ri(2, 9) * 10
+      const price = unit * m
+      return {
+        text: `${m}m で ${price}円の リボン。1m の ねだんは？`,
+        correct: `${unit}円`,
+        wrongs: pickWrongs(unit, '円', [price, unit * m * m, unit + 10]),
+      }
     }),
     BT('hi', () => {
-      const total = pick([1500, 1600, 2000, 2500])
       const r1 = ri(2, 4)
-      const r2 = ri(1, 3)
-      const one = total / (r1 + r2)
-      return { text: `${total}円を 姉と妹で ${r1} : ${r2} に 分けます。姉の分は なん円？`, correct: `${one * r1}円`, wrongs: [`${one * r2}円`, `${total / 2}円`, `${one * r1 + 100}円`] }
+      const r2raw = ri(1, 3)
+      // 姉と妹の比が おなじだと「妹の分」が 正解と ぴったり かぶるので ずらす
+      const r2 = r2raw === r1 ? r1 + 1 : r2raw
+      // 「1つ分」を先に決めて 合計を 比の和の倍数にする。
+      // 合計を先に決めると 1500÷7 のように わりきれず、
+      // 214.2857…円 という 答えに なってしまう
+      const one = pick([100, 150, 200, 250])
+      const total = one * (r1 + r2)
+      // ありがちな まちがい: 妹の分 / 1つ分だけ答える / 半分にする / 1つ多くとる。
+      // 候補を 多めに わたして、かぶった分は pickWrongs に のぞかせる
+      return {
+        text: `${total}円を 姉と妹で ${r1} : ${r2} に 分けます。姉の分は なん円？`,
+        correct: `${one * r1}円`,
+        wrongs: pickWrongs(one * r1, '円', [one * r2, one, total / 2, one * (r1 + 1)]),
+      }
     }),
     BT('kantan', () => {
       const [a, b] = pick([[2, 3], [3, 4], [3, 5], [4, 5]])

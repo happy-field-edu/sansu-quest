@@ -17,6 +17,9 @@ import { STAGE_BY_ID } from '../data/worlds'
 import { ITEMS } from '../data/items'
 import { genProblem, genBossProblem } from '../data/generators'
 import MemoPad from '../components/MemoPad'
+import Sprite from '../pixel/Sprite'
+import { monsterUrl } from '../pixel/monsters'
+import { PIX_THEME } from '../pixel/theme'
 import { sfx } from '../game/sound'
 import { Win, CommandList, Typewriter } from '../ui/Win'
 import type { Item, Problem } from '../types'
@@ -38,8 +41,8 @@ export default function Battle({
   const { save, dispatch } = useGame()
   const stage = STAGE_BY_ID[stageId]
   const isBoss = mode === 'boss'
+  const battleTheme = PIX_THEME[stage.worldId]
   const enemyName = isBoss ? stage.bossName : stage.enemyName
-  const enemyEmoji = isBoss ? stage.bossEmoji : stage.enemyEmoji
 
   const [startStats] = useState(() => playerStats(save))
   // ボス戦は とちゅうで やめても つづきから（オートセーブ）。
@@ -263,15 +266,31 @@ export default function Battle({
             fx === 'miss' ? 'anim-shake-hard' : ''
           }`}
         >
-          {/* 戦闘背景（うずまく闇） */}
-          <div className="pointer-events-none absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 40%, #24244a 0%, #050510 70%)' }} />
+          {/* 戦闘背景：よぞらと 地面（ワールドの 色に あわせる） */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40"
+            style={{ background: `radial-gradient(circle at 50% 35%, ${battleTheme.grass[1]} 0%, #05050f 72%)` }}
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0"
+            style={{
+              height: '28%',
+              background: `linear-gradient(${battleTheme.grass[1]} 0 3px, ${battleTheme.grass[0]} 3px)`,
+              opacity: 0.55,
+            }}
+          />
           <p className="font-dot z-10 text-sm text-slate-300">
             {isBoss ? '👑 大ボスせん' : '⚔️ たたかい'}　EXP＋{expShown}　<span className="text-yellow-200">🪙＋{coinShown}</span>
             {resumed && <span className="ml-2 text-yellow-200">▶つづきから</span>}
           </p>
-          <div className={`relative z-10 my-1 ${isBoss ? 'text-[7rem]' : 'text-8xl'}`}>
+          <div className="relative z-10 my-1">
             {/* モンスター本体（せいかいで 白く点滅しながら のけぞる） */}
-            <span className={`inline-block ${fx === 'hit' ? 'anim-damaged' : 'anim-floaty'}`}>{enemyEmoji}</span>
+            <Sprite
+              url={monsterUrl(stageId, isBoss)}
+              size={isBoss ? 208 : 150}
+              className={`inline-block ${fx === 'hit' ? 'anim-damaged' : 'anim-floaty'}`}
+              style={{ filter: 'drop-shadow(3px 5px 0 rgba(0,0,0,0.5))' }}
+            />
             {/* 斬撃エフェクト */}
             {fx === 'hit' && (
               <>

@@ -1,0 +1,553 @@
+import { artUrl, type Art, type Pal } from './px'
+
+// ============================================================
+// モンスターの ドット絵
+// ・ザコは 16×16、大ボスは 24×24（フィールドでも 戦闘でも おなじ絵を つかう）
+// ・かたちは 12種類。ドラクエのように「おなじ かたち＋色ちがい」で
+//   48ひきを 見分けられるように している。
+// パレットの文字： A=本体 B=かげ C=アクセント D=りんかく E=白目 P=くろ目
+// ============================================================
+
+// ---------------- ザコ（16×16） ----------------
+
+const SLIME: Art = [
+  '................',
+  '................',
+  '......DDDD......',
+  '....DDAAAADD....',
+  '...DAAAAAAAAD...',
+  '..DAAAAAAAAAAD..',
+  '..DAAEEAAEEAAD..',
+  '..DAAPPAAPPAAD..',
+  '..DAAAAAAAAAAD..',
+  '..DAAAACCAAAAD..',
+  '..DABBBBBBBBAD..',
+  '..DAAAAAAAAAAD..',
+  '...DDAAAAAADD...',
+  '.....DDDDDD.....',
+  '................',
+  '................',
+]
+
+const BUG: Art = [
+  '................',
+  '................',
+  '...D........D...',
+  '....D......D....',
+  '.....DAAAAD.....',
+  '....DAEPAEPD....',
+  '...DAAAAAAAAD...',
+  '..DCAAAAAAAACD..',
+  '..DAABBAABBAAD..',
+  '..DCAAAAAAAACD..',
+  '..DAABBAABBAAD..',
+  '..DCAAAAAAAACD..',
+  '...DAAAAAAAAD...',
+  '....DDAAAADD....',
+  '......DDDD......',
+  '................',
+]
+
+const BAT: Art = [
+  '................',
+  '..D..........D..',
+  '.DBD........DBD.',
+  '.DBBD......DBBD.',
+  'DBBBBD.DD.DBBBBD',
+  'DBBBBBDAADBBBBBD',
+  '.DBBBDAAAADBBBD.',
+  '..DBDAEPPEADBD..',
+  '...DDAAAAAADD...',
+  '.....DACCAD.....',
+  '.....DAAAAD.....',
+  '......DAAD......',
+  '.......DD.......',
+  '................',
+  '................',
+  '................',
+]
+
+const BEAST: Art = [
+  '................',
+  '................',
+  '..D..........D..',
+  '.DAD........DAD.',
+  '.DAAD......DAAD.',
+  '.DAAADDDDDDAAAD.',
+  '.DAAAAAAAAAAAAD.',
+  '.DAEPAAAAAAPEAD.',
+  '.DAAAAACCAAAAAD.',
+  '.DAABBBCCBBBAAD.',
+  '..DAAAAAAAAAAD..',
+  '..DAAAAAAAAAAD..',
+  '..DAADDAADDAAD..',
+  '...DD..DD..DD...',
+  '................',
+  '................',
+]
+
+const GHOST: Art = [
+  '................',
+  '................',
+  '.....DDDDD......',
+  '...DDAAAAADD....',
+  '..DAAAAAAAAAD...',
+  '..DAAAAAAAAAD...',
+  '..DAEEAAAEEAD...',
+  '..DAPPAAAPPAD...',
+  '..DAAAAAAAAAD...',
+  '..DAAACCCAAAD...',
+  '..DAAAAAAAAAD...',
+  '..DAABBABBAAD...',
+  '..DADD.D.DDAD...',
+  '...D.....D..D...',
+  '................',
+  '................',
+]
+
+const SNAKE: Art = [
+  '................',
+  '.......DDDD.....',
+  '......DAAAAD....',
+  '.....DAEPAPED...',
+  '.....DAAAAAAD...',
+  '......DAACCD....',
+  '.......DAAD.....',
+  '......DAAAAD....',
+  '.....DAABBAAD...',
+  '....DAABBBBAAD..',
+  '...DAABBAABBAD..',
+  '...DAAAAAAAAAD..',
+  '....DDAAAAADD...',
+  '......DDDDD.....',
+  '................',
+  '................',
+]
+
+const ROBOT: Art = [
+  '................',
+  '.......C........',
+  '.......C........',
+  '....DDDDDDD.....',
+  '....DAAAAAD.....',
+  '....DEPAPED.....',
+  '....DAAAAAD.....',
+  '....DACCCAD.....',
+  '..DDDDDDDDDDD...',
+  '..DAAAAAAAAAD...',
+  '..DABBBBBBBAD...',
+  '..DAAAAAAAAAD...',
+  '..DDDDDDDDDDD...',
+  '...DAAD.DAAD....',
+  '...DDDD.DDDD....',
+  '................',
+]
+
+const BIRD: Art = [
+  '................',
+  '................',
+  '.......DDD......',
+  '......DAAAD.....',
+  '.....DAEPAAD....',
+  '.....DAAAAADCC..',
+  '....DAAAAAAAD...',
+  '...DAABBBBAAD...',
+  '..DAAABBBBAAAD..',
+  '..DAABBBBBBAAD..',
+  '...DAAABBAAAD...',
+  '....DDAAAADD....',
+  '......DAAD......',
+  '.....DD..DD.....',
+  '................',
+  '................',
+]
+
+const CRAB: Art = [
+  '................',
+  '................',
+  '..DD........DD..',
+  '.DAAD......DAAD.',
+  '.DAAAD....DAAAD.',
+  '..DAAD.DD.DAAD..',
+  '...DDDDAADDDD...',
+  '..DAAAAAAAAAAD..',
+  '..DAEPAAAAPEAD..',
+  '..DAAAACCAAAAD..',
+  '..DAABBBBBBAAD..',
+  '..DAAAAAAAAAAD..',
+  '...DDDDDDDDDD...',
+  '..D.D.D..D.D.D..',
+  '................',
+  '................',
+]
+
+const TURTLE: Art = [
+  '................',
+  '................',
+  '................',
+  '.......DDDD.....',
+  '......DAAAAD....',
+  '...DDDAEPAED....',
+  '..DBBBDAAAAD....',
+  '.DBCCBBDDDD.....',
+  'DBCCCCBBBBBD....',
+  'DBCCCCCCCCBD....',
+  'DBBCCCCCCBBD....',
+  '.DBBBBBBBBD.....',
+  '..DDAADDAAD.....',
+  '...DDD..DDD.....',
+  '................',
+  '................',
+]
+
+const MAGE: Art = [
+  '.......D........',
+  '......DCD.......',
+  '.....DCCCD......',
+  '....DCCCCCD.....',
+  '...DCCCCCCCD....',
+  '..DDDDDDDDDDD...',
+  '....DAAAAAD.....',
+  '....DEPAPED.....',
+  '....DAAAAAD.....',
+  '...DBBBBBBBD....',
+  '..DBBBBBBBBBD...',
+  '..DBBBAAABBBD...',
+  '..DBBBBBBBBBD...',
+  '..DDBBBBBBBDD...',
+  '....DDDDDDD.....',
+  '................',
+]
+
+const FISH: Art = [
+  '................',
+  '................',
+  '................',
+  '.....DDDDD......',
+  '...DDAAAAADD..D.',
+  '..DAAAAAAAAAD.DD',
+  '.DAEPAAAAAAAADAD',
+  '.DAAAAACCCAAADAD',
+  '.DAAAAACCCAAADAD',
+  '.DAABBAAAAAAADAD',
+  '..DAABBBBAAAD.DD',
+  '...DDAAAAADD..D.',
+  '.....DDDDD......',
+  '................',
+  '................',
+  '................',
+]
+
+// ---------------- 大ボス（24×24） ----------------
+
+const B_DRAGON: Art = [
+  '........................',
+  '.....C............C.....',
+  '.....CC..........CC.....',
+  '......CC........CC......',
+  '.......DDDDDDDDDD.......',
+  '......DAAAAAAAAAAD......',
+  'DD....DAAAAAAAAAAD....DD',
+  'DAD...DAEEAAAAEEAD...DAD',
+  'DAAD..DAPPAAAAPPAD..DAAD',
+  'DAAAD.DAAAAAAAAAAD.DAAAD',
+  'DAAAAD.DAACCCCAAD.DAAAAD',
+  'DAAAAAD.DAAAAAAD.DAAAAAD',
+  'DAAAAAAD.DDDDDD.DAAAAAAD',
+  '.DAAAAAD.DAAAAD.DAAAAAD.',
+  '..DAAAAAAAAAAAAAAAAAAD..',
+  '...DAAAAAAAAAAAAAAAAD...',
+  '....DAAAAAAAAAAAAAAD....',
+  '......DAABBBBBBAAD......',
+  '......DAABBBBBBAAD......',
+  '......DAAAAAAAAAAD......',
+  '......DAAD....DAAD......',
+  '.....DDDD......DDDD.....',
+  '........................',
+  '........................',
+]
+
+const B_KING: Art = [
+  '........................',
+  '......C...C...C.........',
+  '......CCCCCCCCC.........',
+  '.....DCCCCCCCCCD........',
+  '.....DDDDDDDDDDD........',
+  '......DAAAAAAAAD........',
+  '......DAEEAAEEAD........',
+  '......DAPPAAPPAD........',
+  '......DAAAAAAAAD...C....',
+  '......DAABBBBAAD...C....',
+  '.......DAAAAAAD....P....',
+  '....DDDDDDDDDDDDDD.P....',
+  '...DBBBBBBBBBBBBBBDP....',
+  '..DBBBCCCCCCCCBBBBDP....',
+  '..DBBBCCCCCCCCBBBBDP....',
+  '..DBBBBCCCCCCBBBBBDP....',
+  '..DBBBBBBBBBBBBBBBD.....',
+  '..DBBBBBBBBBBBBBBBD.....',
+  '..DBBBBBBBBBBBBBBBD.....',
+  '...DBBBBBBBBBBBBBD......',
+  '....DDBBBBBBBBBDD.......',
+  '......DDD...DDD.........',
+  '........................',
+  '........................',
+]
+
+const B_DEMON: Art = [
+  '........................',
+  '..C..................C..',
+  '..CC................CC..',
+  '...CC..............CC...',
+  '...CCC............CCC...',
+  '....CCDDDDDDDDDDDDCC....',
+  '.....DAAAAAAAAAAAAD.....',
+  '.....DAEEAAAAAAEEAD.....',
+  '.....DAPPAAAAAAPPAD.....',
+  '.....DAAAAAAAAAAAAD.....',
+  '.....DAAWWWWWWWWAAD.....',
+  '......DAAAAAAAAAAD......',
+  '..DDDDDDAAAAAAAADDDDDD..',
+  '.DBBBBBDAAAAAAAADBBBBBD.',
+  '.DBBBBBBDAAAAAADBBBBBBD.',
+  '.DBBBBBBBDAAAADBBBBBBBD.',
+  '..DBBBBBBBDDDDBBBBBBBD..',
+  '...DBBBBBBBBBBBBBBBBD...',
+  '....DBBBBBBBBBBBBBBD....',
+  '.....DDBBBBBBBBBBDD.....',
+  '.......DDDD..DDDD.......',
+  '........................',
+  '........................',
+  '........................',
+]
+
+const B_KRAKEN: Art = [
+  '........................',
+  '..........DD............',
+  '.........DAAD...........',
+  '........DAAAAD..........',
+  '.......DAAAAAAD.........',
+  '......DAAAAAAAAD........',
+  '.....DAAAAAAAAAAD.......',
+  '....DAAAAAAAAAAAAD......',
+  '....DAEEEAAAAEEEAD......',
+  '....DAPPPAAAAPPPAD......',
+  '....DAAAAAAAAAAAAD......',
+  '....DAAACCCCCCAAAD......',
+  '....DAAAAAAAAAAAAD......',
+  '....DDDDDDDDDDDDDD......',
+  '..DBBD.DBBD.DBBD.DBBD...',
+  '..DBBD.DBBD.DBBD.DBBD...',
+  '.DBBD..DBBD..DBBD..DBBD.',
+  '.DBBD..DBBD..DBBD..DBBD.',
+  '.DBD....DBD...DBD...DBD.',
+  '..DD.....DD....DD....DD.',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+]
+
+const B_OWL: Art = [
+  '........................',
+  '........................',
+  '.....DD........DD.......',
+  '....DCCD......DCCD......',
+  '....DCCDDDDDDDDCCD......',
+  '.....DDAAAAAAAADD.......',
+  '....DAAAAAAAAAAAAD......',
+  '...DAAEEEAAAAEEEAAD.....',
+  '...DAEPPPEAAEPPPEAD.....',
+  '...DAAEEEACCAEEEAAD.....',
+  '...DAAAAAACCAAAAAAD.....',
+  '...DAABBAAAAAABBAAD.....',
+  '...DAABBBBAABBBBAAD.....',
+  '...DAABBBBBBBBBBAAD.....',
+  '....DAABBBBBBBBAAD......',
+  '....DAAABBBBBBAAAD......',
+  '.....DAAAAAAAAAAD.......',
+  '......DDAAAAAADD........',
+  '........DCCCCD..........',
+  '.......DDD..DDD.........',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+]
+
+const B_WHALE: Art = [
+  '........................',
+  '........................',
+  '..........CC............',
+  '.........CCCC...........',
+  '........CCCCCC..........',
+  '......DDDDDDDDDD........',
+  '....DDAAAAAAAAAADD......',
+  '..DDAAAAAAAAAAAAAADD....',
+  '.DAAAAAAAAAAAAAAAAAAD.DD',
+  'DAAEEAAAAAAAAAAAAAAAADAD',
+  'DAAPPAAAAAAAAAAAAAAAADAD',
+  'DAAAAAAAAAAAAAAAAAAAADAD',
+  'DBBBBBBBBBBBBBBBBBAAADAD',
+  '.DBBBBBBBBBBBBBBBBAAD.DD',
+  '..DDBBBBBBBBBBBBBDD...D.',
+  '....DDBBBBBBBBBDD.......',
+  '......DDDDDDDDD.........',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+]
+
+const B_GOLEM: Art = [
+  '........................',
+  '......DDDDDDDDDD........',
+  '......DAAAAAAAAD........',
+  '......DAEEAAEEAD........',
+  '......DAPPAAPPAD........',
+  '......DAAAAAAAAD........',
+  '......DAACCCCAAD........',
+  '......DDDDDDDDDD........',
+  '...DDDDDDDDDDDDDDDD.....',
+  '...DAADDAAAAAAAADDAAD...',
+  '...DAADDAAAAAAAADDAAD...',
+  '...DAADDAACCCCAADDAAD...',
+  '...DAADDAACCCCAADDAAD...',
+  '...DAADDAAAAAAAADDAAD...',
+  '...DAADDAAAAAAAADDAAD...',
+  '...DDDDDAAAAAAAADDDDD...',
+  '.......DAAAAAAAAD.......',
+  '.......DAAAAAAAAD.......',
+  '.......DAAD..DAAD.......',
+  '.......DAAD..DAAD.......',
+  '......DDDDD..DDDDD......',
+  '........................',
+  '........................',
+  '........................',
+]
+
+const B_SERPENT: Art = [
+  '........................',
+  '.........DDDDDD.........',
+  '........DAAAAAAD........',
+  '.......DAEEAAEEAD.......',
+  '.......DAPPAAPPAD.......',
+  '.......DAAAAAAAAD.......',
+  '....DDDDAACCCCAADDDD....',
+  '..DDAAAAAAAAAAAAAAAADD..',
+  '..DAAAAAAAAAAAAAAAAAAD..',
+  '..DAABBBBBBBBBBBBBBAAD..',
+  '..DAAABBBBBBBBBBBBAAAD..',
+  '...DDAAAAAAAAAAAAAADD...',
+  '.....DDAAAAAAAAAADD.....',
+  '........DAAAAAAD........',
+  '.........DAAAAD.........',
+  '.........DAAAAD.........',
+  '......DDDDDDDDDDDD......',
+  '....DDBBBBBBBBBBBBDD....',
+  '...DBBBBBBBBBBBBBBBBD...',
+  '...DBBBBDDDDDDDDBBBBD...',
+  '...DBBBBBBBBBBBBBBBBD...',
+  '....DDBBBBBBBBBBBBDD....',
+  '......DDDDDDDDDDDD......',
+  '........................',
+]
+
+const B_BEAST: Art = [
+  '........................',
+  '...DD..............DD...',
+  '..DAAD............DAAD..',
+  '..DAAAD..........DAAAD..',
+  '..DAAAADDDDDDDDDDAAAAD..',
+  '..DAAAAAAAAAAAAAAAAAAD..',
+  '..DAAAAAAAAAAAAAAAAAAD..',
+  '..DAAEEEAAAAAAAAEEEAAD..',
+  '..DAAPPPAAAAAAAAPPPAAD..',
+  '..DAAAAAAAACCAAAAAAAAD..',
+  '...DAAAAAAACCAAAAAAAD...',
+  '...DAAWWWWWWWWWWWWAAD...',
+  '....DAAAAAAAAAAAAAAD....',
+  '.....DBBBBBBBBBBBBD.....',
+  '....DBBBBBBBBBBBBBBD....',
+  '...DBBBBBBBBBBBBBBBBD...',
+  '..DBBBBBBBBBBBBBBBBBBD..',
+  '..DBBBBBBBBBBBBBBBBBBD..',
+  '..DBBBBBBBBBBBBBBBBBBD..',
+  '....DAAD......DAAD......',
+  '....DDDD......DDDD......',
+  '........................',
+  '........................',
+  '........................',
+]
+
+// ---------------- かたちと 色の わりあて ----------------
+
+const SMALL: Record<string, Art> = { slime: SLIME, bug: BUG, bat: BAT, beast: BEAST, ghost: GHOST, snake: SNAKE, robot: ROBOT, bird: BIRD, crab: CRAB, turtle: TURTLE, mage: MAGE, fish: FISH }
+const BIG: Record<string, Art> = { dragon: B_DRAGON, king: B_KING, demon: B_DEMON, kraken: B_KRAKEN, owl: B_OWL, whale: B_WHALE, golem: B_GOLEM, serpent: B_SERPENT, beast: B_BEAST }
+
+// 色セット（A=本体 B=かげ C=アクセント）。D・E・P は 共通。
+const COLORS: Record<string, [string, string, string]> = {
+  green: ['#5cc45a', '#3a8f3a', '#f2e04a'],
+  blue: ['#4f8fe0', '#3160a8', '#a8e8ff'],
+  red: ['#e05a4a', '#a83428', '#ffd24a'],
+  purple: ['#9a6ad0', '#6a44a0', '#e8c0ff'],
+  gray: ['#9aa0aa', '#6a707a', '#d8dee8'],
+  brown: ['#b07a44', '#7a5028', '#e8c88a'],
+  yellow: ['#e8c44a', '#b08a24', '#fff0a8'],
+  pink: ['#e88ab0', '#b05a80', '#ffd8e8'],
+  cyan: ['#4fc4c4', '#2a8a8a', '#c0f8f8'],
+  white: ['#e4e8f0', '#a8b0c0', '#7fc7e8'],
+  dark: ['#5a5470', '#3a3550', '#c04a8a'],
+  orange: ['#e8944a', '#b06024', '#ffd8a8'],
+}
+
+function palOf(c: string): Pal {
+  const [A, B, C] = COLORS[c] ?? COLORS.green
+  return { A, B, C, D: '#1a1424', E: '#ffffff', P: '#1a1424', W: '#ffffff' }
+}
+
+// 各ステージの ザコ／大ボスの 見た目
+const LOOK: Record<string, { s: [string, string]; b: [string, string] }> = {
+  'keisan-1': { s: ['bug', 'green'], b: ['dragon', 'green'] },
+  'keisan-2': { s: ['bat', 'purple'], b: ['king', 'yellow'] },
+  'keisan-3': { s: ['beast', 'gray'], b: ['demon', 'red'] },
+  'keisan-4': { s: ['ghost', 'white'], b: ['king', 'dark'] },
+  'keisan-5': { s: ['snake', 'green'], b: ['kraken', 'purple'] },
+  'keisan-6': { s: ['robot', 'cyan'], b: ['dragon', 'purple'] },
+  'ryou-1': { s: ['turtle', 'brown'], b: ['owl', 'brown'] },
+  'ryou-2': { s: ['slime', 'green'], b: ['beast', 'green'] },
+  'ryou-3': { s: ['beast', 'gray'], b: ['golem', 'gray'] },
+  'ryou-4': { s: ['beast', 'brown'], b: ['golem', 'brown'] },
+  'ryou-5': { s: ['turtle', 'green'], b: ['whale', 'blue'] },
+  'ryou-6': { s: ['beast', 'yellow'], b: ['owl', 'orange'] },
+  'zukei-1': { s: ['robot', 'orange'], b: ['golem', 'gray'] },
+  'zukei-2': { s: ['robot', 'yellow'], b: ['dragon', 'green'] },
+  'zukei-3': { s: ['slime', 'blue'], b: ['kraken', 'red'] },
+  'zukei-4': { s: ['crab', 'purple'], b: ['serpent', 'green'] },
+  'zukei-5': { s: ['crab', 'red'], b: ['kraken', 'orange'] },
+  'zukei-6': { s: ['ghost', 'cyan'], b: ['dragon', 'blue'] },
+  'kankei-1': { s: ['beast', 'brown'], b: ['beast', 'orange'] },
+  'kankei-2': { s: ['bug', 'yellow'], b: ['crab', 'dark'] },
+  'kankei-3': { s: ['bird', 'green'], b: ['owl', 'blue'] },
+  'kankei-4': { s: ['snake', 'yellow'], b: ['dragon', 'red'] },
+  'kankei-5': { s: ['mage', 'blue'], b: ['king', 'purple'] },
+  'kankei-6': { s: ['fish', 'cyan'], b: ['demon', 'purple'] },
+}
+
+const FALLBACK = { s: ['slime', 'green'] as [string, string], b: ['dragon', 'red'] as [string, string] }
+
+export function monsterArt(stageId: string, boss: boolean): { art: Art; pal: Pal; key: string } {
+  const look = LOOK[stageId] ?? FALLBACK
+  const [shape, color] = boss ? look.b : look.s
+  const art = (boss ? BIG[shape] : SMALL[shape]) ?? SLIME
+  return { art, pal: palOf(color), key: `${boss ? 'b' : 's'}:${shape}:${color}` }
+}
+
+// スプライト用の 画像URL（scale で 大きさを かえる：フィールドは2、戦闘は8）
+export function monsterUrl(stageId: string, boss: boolean, scale = 2): string {
+  const { art, pal, key } = monsterArt(stageId, boss)
+  return artUrl(`mon:${key}:${scale}`, art, pal, scale)
+}
