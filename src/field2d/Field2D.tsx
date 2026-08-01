@@ -26,7 +26,7 @@ import MapCanvas from './MapCanvas'
 import { TILE } from '../pixel/px'
 import Sprite from '../pixel/Sprite'
 import { heroUrl, npcUrl, shopUrl, chestUrl, coinUrl } from '../pixel/chars'
-import { monsterUrl } from '../pixel/monsters'
+import { monsterUrl, monsterDots } from '../pixel/monsters'
 
 const VIEW_W = 15 // 画面に見える よこマス数（マップ36マスの一部だけ見える）
 const VIEW_H = 13 // 画面に見える たてマス数
@@ -416,10 +416,10 @@ export default function Field2D({
               )}
             </div>
           ))}
-          {/* モンスター（大ボスは 48pxで 大きく はみだして 見える） */}
+          {/* モンスター（ドットの 整数倍で 表示：ザコ24×2=48px／大ボス32×2=64px） */}
           {monsters.map((m) => {
             const boss = m.kind === 'boss'
-            const size = boss ? 48 : TILE
+            const size = monsterDots(boss) * 2
             const off = (TILE - size) / 2
             return (
               <div
@@ -431,7 +431,7 @@ export default function Field2D({
                   url={monsterUrl(m.stageId, boss)}
                   size={size}
                   className={boss ? 'anim-floaty' : ''}
-                  style={{ position: 'absolute', left: off, top: off - (boss ? 8 : 0), filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
+                  style={{ position: 'absolute', left: off, top: off - (boss ? 10 : 4), filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
                 />
               </div>
             )

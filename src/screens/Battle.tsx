@@ -18,7 +18,7 @@ import { ITEMS } from '../data/items'
 import { genProblem, genBossProblem } from '../data/generators'
 import MemoPad from '../components/MemoPad'
 import Sprite from '../pixel/Sprite'
-import { monsterUrl } from '../pixel/monsters'
+import { monsterUrl, monsterDots } from '../pixel/monsters'
 import { PIX_THEME } from '../pixel/theme'
 import { sfx } from '../game/sound'
 import { Win, CommandList, Typewriter } from '../ui/Win'
@@ -287,7 +287,7 @@ export default function Battle({
             {/* モンスター本体（せいかいで 白く点滅しながら のけぞる） */}
             <Sprite
               url={monsterUrl(stageId, isBoss)}
-              size={isBoss ? 208 : 150}
+              size={monsterDots(isBoss) * 7}
               className={`inline-block ${fx === 'hit' ? 'anim-damaged' : 'anim-floaty'}`}
               style={{ filter: 'drop-shadow(3px 5px 0 rgba(0,0,0,0.5))' }}
             />
