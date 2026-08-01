@@ -25,7 +25,7 @@ export default function MiniMap({
   camY: number
   tile: number
 }) {
-  const DOT = 3 // 1マス＝3px
+  const DOT = 2 // 1マス＝2px（マップが ひろくなったので 小さめに）
   // いま いる学年ゾーン（＋上下1行）だけを 切り出して 見せる（全体は たてに長すぎる）
   const grade = gradeOfRow(pos.y)
   const { top, bottom } = zoneRows(grade)
@@ -42,6 +42,10 @@ export default function MiniMap({
       const t = map.tiles[y]?.[x]
       if (!t) continue
       if (t === 'w') walls.push({ x, y, c: '#2b6cb0' }) // 川
+      else if ('1234'.includes(t)) walls.push({ x, y, c: 'rgba(248,113,113,0.9)' }) // どうぐや
+      else if ('HIJK'.includes(t)) walls.push({ x, y, c: 'rgba(255,255,255,0.75)' }) // 家
+      else if (t === 'P') walls.push({ x, y, c: 'rgba(255,255,255,0.34)' }) // ひろば
+      else if (t === 'L' || t === 'V' || t === 'B' || t === 'F') walls.push({ x, y, c: 'rgba(180,150,90,0.7)' })
       else if (t === 't' || t === 'r' || t === 'h') walls.push({ x, y, c: 'rgba(255,255,255,0.3)' })
       else if (t === 'f' || t === 'G') walls.push({ x, y, c: 'rgba(250,204,21,0.6)' }) // さく・もん
       else if (t === 'p') walls.push({ x, y, c: 'rgba(255,255,255,0.16)' }) // 道

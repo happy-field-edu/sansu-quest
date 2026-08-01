@@ -23,13 +23,15 @@ import { Win, CommandList, Typewriter } from '../ui/Win'
 import { ZONE_NAMES } from './config2d'
 import { buildWorldMap, isWalkable, startPos, gradeOfRow, MAP_W, MAP_H, type FieldMonster, type Chest } from './map'
 import MapCanvas from './MapCanvas'
-import { TILE } from '../pixel/px'
+import { TILE, DOT } from '../pixel/px'
 import Sprite from '../pixel/Sprite'
-import { heroUrl, npcUrl, shopUrl, chestUrl, coinUrl } from '../pixel/chars'
+import { heroUrl, npcUrl, chestUrl, coinUrl } from '../pixel/chars'
 import { monsterUrl, monsterDots } from '../pixel/monsters'
 
-const VIEW_W = 15 // 画面に見える よこマス数（マップ36マスの一部だけ見える）
-const VIEW_H = 13 // 画面に見える たてマス数
+// 画面に見える マス数。1マスが 48pxに 大きくなったので マス数は へらす
+// ＝ 俯瞰の カメラが 主人公に ぐっと 近づいて 見える。
+const VIEW_W = 10
+const VIEW_H = 9
 
 type Dir = 'up' | 'down' | 'left' | 'right'
 const DELTA: Record<Dir, [number, number]> = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }
@@ -143,14 +145,15 @@ export default function Field2D({
 
   // NPC・立て札の 会話をひらく
   const openTalkAt = (x: number, y: number): boolean => {
+    // どうぐやの 入口：会話ではなく ショップウィンドウを ひらく
+    const door = map.shops.find((s) => s.x === x && s.y === y)
+    if (door) {
+      sfx.chestOpen()
+      setShop({ stageId: door.stageId, grade: STAGE_BY_ID[door.stageId].grade })
+      return true
+    }
     const npc = map.npcs.find((n) => n.x === x && n.y === y)
     if (npc) {
-      // どうぐや：会話ではなく ショップウィンドウを ひらく
-      if (npc.shop && npc.stageId) {
-        sfx.chestOpen()
-        setShop({ stageId: npc.stageId, grade: STAGE_BY_ID[npc.stageId].grade })
-        return true
-      }
       dlgIdxRef.current = 0
       setDlgIdx(0)
       setDialog({ emoji: npc.emoji, name: npc.name, lines: npc.lines })
@@ -381,45 +384,54 @@ export default function Field2D({
         className="dq-frame relative overflow-hidden"
         style={{ width: viewW, height: viewH, maxWidth: '100vw' }}
       >
+        {/* 地形（見えている ぶんだけ canvas に えがく） */}
+        <MapCanvas worldId={worldId} map={map} openGates={openGates} camX={camX} camY={camY} viewW={viewW} viewH={viewH} />
         <div
-          className="absolute top-0 left-0 transition-transform duration-150 ease-linear"
+          className="absolute top-0 left-0"
           style={{ width: mapPxW, height: mapPxH, transform: `translate(${-camX}px, ${-camY}px)` }}
         >
-          {/* 地形（1まいの canvas に ドット絵で えがく） */}
-          <MapCanvas worldId={worldId} map={map} openGates={openGates} />
+          {/* どうぐやの めじるし（赤い屋根の たてものの うえに コイン） */}
+          {/* ※ anim-floaty は transform を つかうので、
+              いちの transform は かならず 外がわの div に かく */}
+          {map.shops.map((s) => (
+            <div
+              key={`shop-${s.x},${s.y}`}
+              className="absolute top-0 left-0"
+              style={{ transform: `translate(${(s.x - 1) * TILE}px, ${(s.y - 2) * TILE}px)` }}
+            >
+              <Sprite url={coinUrl()} className="anim-floaty" />
+            </div>
+          ))}
           {/* 宝箱（あけると あいた箱に なる） */}
           {map.chests.map((c) => {
             const opened = save.openedChests.includes(c.id)
             return (
-              <Sprite
+              <div
                 key={c.id}
-                url={chestUrl(opened)}
-                className={`absolute top-0 left-0 ${opened ? 'opacity-70' : 'anim-floaty'}`}
-                style={{ transform: `translate(${c.x * TILE}px, ${c.y * TILE}px)`, filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.35))' }}
-              />
+                className="absolute top-0 left-0"
+                style={{ transform: `translate(${c.x * TILE}px, ${c.y * TILE}px)` }}
+              >
+                <Sprite
+                  url={chestUrl(opened)}
+                  className={opened ? 'opacity-70' : 'anim-floaty'}
+                  style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.35))' }}
+                />
+              </div>
             )
           })}
-          {/* むらびと（NPC）・どうぐや */}
+          {/* むらびと（NPC） */}
           {map.npcs.map((n) => (
-            <div
+            <Sprite
               key={`${n.x},${n.y}`}
+              url={npcUrl(n.emoji)}
               className="absolute top-0 left-0"
-              style={{ width: TILE, height: TILE, transform: `translate(${n.x * TILE}px, ${n.y * TILE}px)` }}
-            >
-              <Sprite
-                url={n.shop ? shopUrl() : npcUrl(n.emoji)}
-                style={{ filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.35))' }}
-              />
-              {/* どうぐやは コインの めじるしを つけて 見つけやすく */}
-              {n.shop && (
-                <Sprite url={coinUrl()} size={TILE} className="anim-floaty absolute -top-5 left-0" />
-              )}
-            </div>
+              style={{ transform: `translate(${n.x * TILE}px, ${n.y * TILE}px)`, filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.35))' }}
+            />
           ))}
-          {/* モンスター（ドットの 整数倍で 表示：ザコ24×2=48px／大ボス32×2=64px） */}
+          {/* モンスター（ドットの 整数倍で 表示：ザコ24×3=72px／大ボス32×3=96px） */}
           {monsters.map((m) => {
             const boss = m.kind === 'boss'
-            const size = monsterDots(boss) * 2
+            const size = monsterDots(boss) * DOT
             const off = (TILE - size) / 2
             return (
               <div
@@ -428,10 +440,10 @@ export default function Field2D({
                 style={{ width: TILE, height: TILE, transform: `translate(${m.x * TILE}px, ${m.y * TILE}px)`, zIndex: boss ? 2 : 1 }}
               >
                 <Sprite
-                  url={monsterUrl(m.stageId, boss)}
+                  url={monsterUrl(m.stageId, boss, DOT)}
                   size={size}
                   className={boss ? 'anim-floaty' : ''}
-                  style={{ position: 'absolute', left: off, top: off - (boss ? 10 : 4), filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
+                  style={{ position: 'absolute', left: off, top: off - (boss ? 14 : 6), filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
                 />
               </div>
             )

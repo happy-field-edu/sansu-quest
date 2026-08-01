@@ -9,9 +9,10 @@
 export type Art = string[] // 1行 = 1ドット行
 export type Pal = Record<string, string> // 文字 → 色
 
-// 1ドットを 何ピクセルで えがくか（2 なら 16×16 の絵が 32×32 になる）
-export const DOT = 2
-export const TILE = 32 // マップ1マスの 大きさ（px）
+// 1ドットを 何ピクセルで えがくか（3 なら 16×16 の絵が 48×48 になる）
+// ＝ 画面が 主人公に ぐっと 近づく（俯瞰の たかさが 下がる）
+export const DOT = 3
+export const TILE = 16 * DOT // マップ1マスの 大きさ（px）= 48
 
 // art の 1文字ずつを 四角で ぬる
 export function drawArt(ctx: CanvasRenderingContext2D, art: Art, pal: Pal, ox = 0, oy = 0, scale = DOT) {

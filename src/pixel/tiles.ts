@@ -244,6 +244,190 @@ const GATE_OPEN: Art = [
   '................',
 ]
 
+// ============================================================
+// 村（モンハンの村のような 集落）を つくる ための タイル
+// 家は 2×2マス（96×96px）で 1けん。屋根左右・かべ（窓）・かべ（扉）の 4まい。
+// ============================================================
+
+const ROOF_L: Art = [
+  '...............A',
+  '..............AA',
+  '.............AAA',
+  '............AAAA',
+  '...........AAAAA',
+  '..........AAAAAA',
+  '.........AAAAAAA',
+  '........AAAAAAAA',
+  '.......AAAAAAAAA',
+  '......AAAAAAAAAA',
+  '.....AAAAAAAAAAA',
+  '....AAAAAAAAAAAA',
+  '...AAAAAAAAAAAAA',
+  '..AAAAAAAAAAAAAA',
+  '.BBBBBBBBBBBBBBB',
+  'SSSSSSSSSSSSSSSS',
+]
+
+const ROOF_R: Art = ROOF_L.map((r) => [...r].reverse().join(''))
+
+const WALL_WIN: Art = [
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWDDDDDDDDDWWWW',
+  'WWWDCCCCCCCDWWWW',
+  'WWWDCCCDCCCDWWWW',
+  'WWWDCCCDCCCDWWWW',
+  'WWWDDDDDDDDDWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'SSSSSSSSSSSSSSSS',
+  'SSSSSSSSSSSSSSSS',
+]
+
+const WALL_DOOR: Art = [
+  'WWWWWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWWWW',
+  'WWWWDDDDDDDDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGKGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'WWWWDGGGGGGDWWWW',
+  'SSSSDGGGGGGDSSSS',
+  'SSSSSSSSSSSSSSSS',
+]
+
+// どうぐやの かべ：上に しましまの ひよけ（テント）を つけて
+// ふつうの家と ひとめで 見分けられるように する。
+const SHOP_WIN: Art = [
+  'YWYWYWYWYWYWYWYW',
+  'WYWYWYWYWYWYWYWY',
+  'YWYWYWYWYWYWYWYW',
+  'LLLLLLLLLLLLLLLL',
+  'LLLDDDDDDDDDLLLL',
+  'LLLDCCCCCCCDLLLL',
+  'LLLDCCCDCCCDLLLL',
+  'LLLDCCCDCCCDLLLL',
+  'LLLDDDDDDDDDLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'SSSSSSSSSSSSSSSS',
+  'SSSSSSSSSSSSSSSS',
+]
+
+const SHOP_DOOR: Art = [
+  'YWYWYWYWYWYWYWYW',
+  'WYWYWYWYWYWYWYWY',
+  'YWYWYWYWYWYWYWYW',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLDDDDDDDDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'LLLLDGGGKGGDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'LLLLDGGGGGGDLLLL',
+  'SSSSDGGGGGGDSSSS',
+  'SSSSSSSSSSSSSSSS',
+]
+
+// 井戸（村の まん中に よくある）
+const WELL: Art = [
+  '................',
+  '...DDDDDDDDDD...',
+  '..DAAAAAAAAAAD..',
+  '..DAAAAAAAAAAD..',
+  '...DDDDDDDDDD...',
+  '.....K....K.....',
+  '.....K.KK.K.....',
+  '..DDDDDDDDDDDD..',
+  '..DSSSSSSSSSSD..',
+  '..DSCCCCCCCCSD..',
+  '..DSCCCCCCCCSD..',
+  '..DSSSSSSSSSSD..',
+  '..DSSSSSSSSSSD..',
+  '..DDDDDDDDDDDD..',
+  '...SSSSSSSSSS...',
+  '................',
+]
+
+// たる（村の 荷物）
+const BARREL: Art = [
+  '................',
+  '................',
+  '....DDDDDDDD....',
+  '...DAAAAAAAAD...',
+  '...DAAAAAAAAD...',
+  '...DBBBBBBBBD...',
+  '...DAAAAAAAAD...',
+  '...DAAAAAAAAD...',
+  '...DBBBBBBBBD...',
+  '...DAAAAAAAAD...',
+  '...DAAAAAAAAD...',
+  '...DDDDDDDDDD...',
+  '....SSSSSSSS....',
+  '................',
+  '................',
+  '................',
+]
+
+// かがり火（村の あかり）
+const FIRE: Art = [
+  '................',
+  '.......F........',
+  '......FKF.......',
+  '.....FKYKF......',
+  '.....FKYYKF.....',
+  '......FKYKF.....',
+  '.......FKF......',
+  '........F.......',
+  '.....DDDDDD.....',
+  '....DSSSSSSD....',
+  '.....DSSSSD.....',
+  '......DSSD......',
+  '......DSSD......',
+  '.....DDSSDD.....',
+  '....DSSSSSSD....',
+  '.....DDDDDD.....',
+]
+
+// はたけ（村の まわりの 田畑）
+const CROP: Art = [
+  'SSSSSSSSSSSSSSSS',
+  'SDDDDDDDDDDDDDDS',
+  'SD............DS',
+  'SD..G......G..DS',
+  'SD.GGG....GGG.DS',
+  'SD..G......G..DS',
+  'SD............DS',
+  'SD..G......G..DS',
+  'SD.GGG....GGG.DS',
+  'SD..G......G..DS',
+  'SD............DS',
+  'SD..G......G..DS',
+  'SD.GGG....GGG.DS',
+  'SD..G......G..DS',
+  'SDDDDDDDDDDDDDDS',
+  'SSSSSSSSSSSSSSSS',
+]
+
 const FLOWER: Art = [
   '................',
   '................',
@@ -263,8 +447,54 @@ const FLOWER: Art = [
   '................',
 ]
 
+// 石だたみ（村の ひろば。あるける）
+// レンガの めじを たてよこに いれただけの おちついた もよう。
+// となりの マスと ぴったり つながるように 8ドットごとに めじを いれる。
+const PLAZA: Art = [
+  'PPPQPPPQPPPQPPPQ',
+  'PPPQPPPQPPPQPPPQ',
+  'PPPQPPPQPPPQPPPQ',
+  'QQQQQQQQQQQQQQQQ',
+  'PQPPPQPPPQPPPQPP',
+  'PQPPPQPPPQPPPQPP',
+  'PQPPPQPPPQPPPQPP',
+  'QQQQQQQQQQQQQQQQ',
+  'PPPQPPPQPPPQPPPQ',
+  'PPPQPPPQPPPQPPPQ',
+  'PPPQPPPQPPPQPPPQ',
+  'QQQQQQQQQQQQQQQQ',
+  'PQPPPQPPPQPPPQPP',
+  'PQPPPQPPPQPPPQPP',
+  'PQPPPQPPPQPPPQPP',
+  'QQQQQQQQQQQQQQQQ',
+]
+
 function pal(th: PixTheme, kind: string): Pal {
   switch (kind) {
+    case 'roofL':
+    case 'roofR':
+      return { A: th.roof[0], B: th.roof[1], S: '#2a2018' }
+    case 'shopRoofL':
+    case 'shopRoofR':
+      return { A: '#c0563f', B: '#8a3826', S: '#2a2018' }
+    case 'wallWin':
+      return { W: th.wall[0], C: th.wall[1], D: th.trunk[1], S: th.wall[2] }
+    case 'shopWin':
+      return { Y: '#f2e2b8', W: '#d84a4a', L: '#e8d4a8', C: '#7fc7e8', D: '#6b4a2a', S: '#6a5238' }
+    case 'shopDoor':
+      return { Y: '#f2e2b8', W: '#d84a4a', L: '#e8d4a8', G: '#8a5a32', D: '#6b4a2a', K: '#f4d94e', S: '#6a5238' }
+    case 'wallDoor':
+      return { W: th.wall[0], G: th.trunk[0], D: th.trunk[1], K: '#f4d94e', S: th.wall[2] }
+    case 'well':
+      return { A: th.roof[0], D: th.trunk[1], S: th.rock[1], C: th.water[0], K: th.trunk[0] }
+    case 'barrel':
+      return { A: '#b0783c', B: '#7a5028', D: '#4a2f16', S: '#33200f' }
+    case 'fire':
+      return { F: '#ff9a3c', K: '#ffd24a', Y: '#fff6c0', D: '#4a3a24', S: '#7a5a34' }
+    case 'crop':
+      return { S: '#8a6a44', D: '#6b4f30', G: '#6bb43f' }
+    case 'plaza':
+      return { P: th.rock[0], Q: th.rock[1] }
     case 'tree':
       return { L: th.leaf[0], M: th.leaf[1], D: th.leaf[2], T: th.trunk[0], S: th.trunk[1] }
     case 'rock':
@@ -293,10 +523,26 @@ const ART: Record<string, Art> = {
   gateShut: GATE_SHUT,
   gateOpen: GATE_OPEN,
   deco: FLOWER,
+  // ---- 村 ----
+  roofL: ROOF_L,
+  roofR: ROOF_R,
+  shopRoofL: ROOF_L,
+  shopRoofR: ROOF_R,
+  wallWin: WALL_WIN,
+  wallDoor: WALL_DOOR,
+  shopWin: SHOP_WIN,
+  shopDoor: SHOP_DOOR,
+  well: WELL,
+  barrel: BARREL,
+  fire: FIRE,
+  crop: CROP,
+  plaza: PLAZA,
 }
 
-// もの（木・岩…）のタイル。とうめいな背景なので 草の うえに かさねて つかう。
-export function objTile(worldId: WorldId, kind: keyof typeof ART): HTMLCanvasElement {
+export type ObjKind = keyof typeof ART
+
+// もの（木・岩・家…）のタイル。とうめいな背景なので 草の うえに かさねて つかう。
+export function objTile(worldId: WorldId, kind: ObjKind): HTMLCanvasElement {
   const th = PIX_THEME[worldId]
   const palKind = kind === 'gateShut' || kind === 'gateOpen' ? 'gate' : kind
   return cachedTile(`obj:${worldId}:${kind}`, TILE, TILE, (ctx) => {
