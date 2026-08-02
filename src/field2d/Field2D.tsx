@@ -384,12 +384,14 @@ export default function Field2D({
         className="dq-frame relative overflow-hidden"
         style={{ width: viewW, height: viewH, maxWidth: '100vw' }}
       >
-        {/* 地形（見えている ぶんだけ canvas に えがく） */}
-        <MapCanvas worldId={worldId} map={map} openGates={openGates} camX={camX} camY={camY} viewW={viewW} viewH={viewH} />
+        {/* 地形も ゆうしゃも おなじ「うごく入れもの」に入れて いっしょに うごかす。
+            （地形だけ 先に とぶと、ゆうしゃが 1歩ごとに はねて 見えてしまう） */}
         <div
-          className="absolute top-0 left-0"
+          className="absolute top-0 left-0 transition-transform duration-150 ease-linear"
           style={{ width: mapPxW, height: mapPxH, transform: `translate(${-camX}px, ${-camY}px)` }}
         >
+          {/* 地形（見えている ところ＋まわり2マスだけ canvas に えがく） */}
+          <MapCanvas worldId={worldId} map={map} openGates={openGates} camX={camX} camY={camY} viewW={viewW} viewH={viewH} />
           {/* どうぐやの めじるし（赤い屋根の たてものの うえに コイン） */}
           {/* ※ anim-floaty は transform を つかうので、
               いちの transform は かならず 外がわの div に かく */}
