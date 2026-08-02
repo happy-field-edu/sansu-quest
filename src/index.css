@@ -431,3 +431,25 @@ body {
   transform: translateY(3px);
   box-shadow: 0 0 0 rgba(0, 0, 0, 0) !important;
 }
+
+/* ---- 戦闘中の ゆうしゃ ---- */
+/* せいかいすると 前に ふみこんで 切りつける */
+@keyframes heroLunge {
+  0% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(22px) translateY(-6px); }
+  55% { transform: translateX(12px) translateY(0); }
+  100% { transform: translateX(0) translateY(0); }
+}
+.anim-hero-lunge {
+  animation: heroLunge 0.5s ease-out;
+}
+/* ミスすると のけぞる */
+@keyframes heroHurt {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  45% { transform: translateX(5px); }
+  70% { transform: translateX(-4px); }
+}
+.anim-hero-hurt {
+  animation: heroHurt 0.55s ease-out;
+}

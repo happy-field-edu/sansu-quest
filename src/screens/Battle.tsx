@@ -19,6 +19,8 @@ import { genProblem, genBossProblem } from '../data/generators'
 import MemoPad from '../components/MemoPad'
 import Sprite from '../pixel/Sprite'
 import { monsterUrl, monsterDots } from '../pixel/monsters'
+import { heroUrl } from '../pixel/chars'
+import { heroLookOf } from '../pixel/heroLook'
 import { PIX_THEME } from '../pixel/theme'
 import { sfx } from '../game/sound'
 import { Win, CommandList, Typewriter } from '../ui/Win'
@@ -42,6 +44,7 @@ export default function Battle({
   const stage = STAGE_BY_ID[stageId]
   const isBoss = mode === 'boss'
   const battleTheme = PIX_THEME[stage.worldId]
+  const look = heroLookOf(save) // そうびを ゆうしゃの 見た目に 反映
   const enemyName = isBoss ? stage.bossName : stage.enemyName
 
   const [startStats] = useState(() => playerStats(save))
@@ -265,6 +268,8 @@ export default function Battle({
           className={`dq-frame relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-[#050510] ${
             fx === 'miss' ? 'anim-shake-hard' : ''
           }`}
+          /* ゆうしゃと モンスターが きちんと 入る 高さを かくほ する */
+          style={{ minHeight: isBoss ? 300 : 260 }}
         >
           {/* 戦闘背景：よぞらと 地面（ワールドの 色に あわせる） */}
           <div
@@ -279,11 +284,21 @@ export default function Battle({
               opacity: 0.55,
             }}
           />
+          {/* ---- ゆうしゃ（そうびが 見た目に 出る） ----
+              せいかいで ふみこんで 切りつけ、ミスで のけぞる */}
+          <Sprite
+            url={heroUrl('right', fx === 'hit' ? 1 : 0, look)}
+            size={96}
+            className={`absolute bottom-1 left-1 z-20 ${
+              fx === 'hit' ? 'anim-hero-lunge' : fx === 'miss' ? 'anim-hero-hurt' : ''
+            }`}
+            style={{ filter: 'drop-shadow(2px 3px 0 rgba(0,0,0,0.55))' }}
+          />
           <p className="font-dot z-10 text-sm text-slate-300">
             {isBoss ? '👑 大ボスせん' : '⚔️ たたかい'}　EXP＋{expShown}　<span className="text-yellow-200">🪙＋{coinShown}</span>
             {resumed && <span className="ml-2 text-yellow-200">▶つづきから</span>}
           </p>
-          <div className="relative z-10 my-1">
+          <div className="relative z-10 my-1 ml-16">
             {/* モンスター本体（せいかいで 白く点滅しながら のけぞる） */}
             <Sprite
               url={monsterUrl(stageId, isBoss)}
@@ -324,7 +339,7 @@ export default function Battle({
             )}
           </div>
           {/* のこり問題ゲージ */}
-          <div className="z-10 w-2/3">
+          <div className="z-10 ml-16 w-1/2">
             <div className="h-2.5 overflow-hidden rounded-full border border-white/50 bg-slate-900">
               <div
                 className={`h-full transition-all duration-500 ${isBoss ? 'bg-red-500' : 'bg-emerald-500'}`}
