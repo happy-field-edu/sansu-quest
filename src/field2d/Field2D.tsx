@@ -26,6 +26,7 @@ import MapCanvas from './MapCanvas'
 import { TILE, DOT } from '../pixel/px'
 import Sprite from '../pixel/Sprite'
 import { heroUrl, npcUrl, chestUrl, coinUrl } from '../pixel/chars'
+import { heroLookOf } from '../pixel/heroLook'
 import { monsterUrl, monsterDots } from '../pixel/monsters'
 
 // 画面に見える マス数。1マスが 48pxに 大きくなったので マス数は へらす
@@ -75,6 +76,8 @@ export default function Field2D({
   const facingRef = useRef<Dir>('up')
   facingRef.current = facing
   const [walk, setWalk] = useState<0 | 1>(0) // あるく コマ（1歩ごとに 入れかわる）
+  // そうびを 見た目に 反映する（ぶき・たて・よろい・かぶと・くつ・おまもり）
+  const look = useMemo(() => heroLookOf(save), [save.equipped])
   const [monsters, setMonsters] = useState<FieldMonster[]>(map.monsters)
   const [encounterFx, setEncounterFx] = useState<{ stageId: string; mode: 'practice' | 'boss' } | null>(null)
   const [prep, setPrep] = useState<string | null>(null) // ボス前ウィンドウ
@@ -452,7 +455,7 @@ export default function Field2D({
           })}
           {/* ゆうしゃ */}
           <Sprite
-            url={heroUrl(facing, walk)}
+            url={heroUrl(facing, walk, look)}
             className="absolute top-0 left-0 transition-transform duration-150 ease-linear"
             style={{ transform: `translate(${pos.x * TILE}px, ${pos.y * TILE}px)`, zIndex: 3, filter: 'drop-shadow(1px 2px 0 rgba(0,0,0,0.4))' }}
           />

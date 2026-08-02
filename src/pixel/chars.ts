@@ -1,4 +1,5 @@
-import { artUrl, type Art, type Pal } from './px'
+import { artUrl, layersUrl, type Art, type Layer, type Pal } from './px'
+import { NO_LOOK, lookKey, type HeroLook } from './heroLook'
 
 // ============================================================
 // ゆうしゃ・むらびと・たからばこ・どうぐや の ドット絵
@@ -68,26 +69,154 @@ const LEGS: Record<string, Art[]> = {
   ],
 }
 
-const HERO_PAL: Pal = {
-  H: '#e04a4a', // ぼうし
-  h: '#a92f2f',
-  F: '#ffd9a8', // かお
-  E: '#2a2a3a', // め
-  K: '#7a4a24', // かみ
-  B: '#3f74d8', // ふく
-  b: '#2b53a5',
-  W: '#f2e6c8', // むねの かざり
-  S: '#6b4326', // くつ
+// ---- そうびの 絵（からだに かさねる） ----
+// 「みぎ手に ぶき」「ひだり手に たて」を もった かたちで かき、
+// むきに あわせて 左右を 入れかえる。
+const W_STICK: Art = [
+  '................',
+  '................',
+  '................',
+  '............DDD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DDD.',
+  '................',
+  '................',
+  '................',
+]
+
+const W_SWORD: Art = [
+  '................',
+  '.............D..',
+  '............DCD.',
+  '............DCD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '............DcD.',
+  '...........DGGGD',
+  '............DgD.',
+  '............DgD.',
+  '.............D..',
+  '................',
+  '................',
+  '................',
+]
+
+const S_SMALL: Art = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '..DDD...........',
+  '.DSSSD..........',
+  '.DSKSD..........',
+  '.DSSSD..........',
+  '.DSSSD..........',
+  '..DSD...........',
+  '................',
+  '................',
+  '................',
+]
+
+const S_LARGE: Art = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.DDDD...........',
+  'DSSSSD..........',
+  'DSSKSD..........',
+  'DSKKKD..........',
+  'DSSKSD..........',
+  'DSSSSD..........',
+  '.DSSD...........',
+  '..DD............',
+  '................',
+  '................',
+]
+
+// ランクごとの 色
+const WEAPON_ART = [null, W_STICK, W_SWORD, W_SWORD, W_SWORD]
+const WEAPON_PAL: (Pal | null)[] = [
+  null,
+  { C: '#c99a5a', c: '#a9793f', G: '#6b4326', g: '#5a3720', D: '#3f2810' }, // 木
+  { C: '#eef3fa', c: '#b6c0cf', G: '#8a6a3a', g: '#6b4a2a', D: '#2e343c' }, // 鉄
+  { C: '#fff0a0', c: '#e8c44a', G: '#8a6a3a', g: '#6b4a2a', D: '#5a3f0c' }, // 金
+  { C: '#ffffff', c: '#8ee6ff', G: '#e8e8f0', g: '#a8b0c0', D: '#1f4a60' }, // 光
+]
+const SHIELD_ART = [null, S_SMALL, S_LARGE]
+const SHIELD_PAL: (Pal | null)[] = [
+  null,
+  { D: '#5a3720', S: '#a9793f', K: '#f2e6c8' }, // 木
+  { D: '#454c58', S: '#c2cad6', K: '#7fc7e8' }, // 鉄・ミスリル
+]
+const ARMOR_PAL = [
+  { B: '#3f74d8', b: '#2b53a5' }, // たびの服
+  { B: '#4f9e4f', b: '#3a7a3a' }, // 布
+  { B: '#9aa0aa', b: '#6a707a' }, // 鉄
+  { B: '#c0563f', b: '#8a3826' }, // 竜
+]
+const HELMET_PAL = [
+  { H: '#e04a4a', h: '#a92f2f' }, // 赤いぼうし
+  { H: '#a9793f', h: '#7d5528' }, // かわ
+  { H: '#b8c0cc', h: '#7a828e' }, // 鉄
+  { H: '#f4d94e', h: '#c99a2a' }, // せいなる
+]
+const BOOTS_COL = ['#6b4326', '#8a5a2a', '#7a828e', '#4f8fe0']
+
+function bodyPal(look: HeroLook): Pal {
+  return {
+    ...HELMET_PAL[look.helmet] ?? HELMET_PAL[0],
+    ...ARMOR_PAL[look.armor] ?? ARMOR_PAL[0],
+    F: '#ffd9a8', // かお
+    E: '#2a2a3a', // め
+    K: '#7a4a24', // かみ
+    W: look.charm ? '#7fe3ff' : '#f2e6c8', // むねの かざり（おまもりで 光る）
+    S: BOOTS_COL[look.boots] ?? BOOTS_COL[0],
+  }
 }
 
 export type Dir4 = 'up' | 'down' | 'left' | 'right'
 
-export function heroUrl(dir: Dir4, frame: 0 | 1): string {
+// そうびを かさねた ゆうしゃ。
+// ・たて は「うしろ」から えがく（下むきだけ 体の 手前）
+// ・ぶき は いつも 体の 手前
+export function heroUrl(dir: Dir4, frame: 0 | 1, look: HeroLook = NO_LOOK): string {
   const legs = LEGS[dir === 'left' || dir === 'right' ? 'side' : 'front'][frame]
-  let body = dir === 'up' ? BODY_UP : dir === 'down' ? BODY_DOWN : BODY_LEFT
-  let art = [...body, ...legs]
-  if (dir === 'right') art = mirror(art)
-  return artUrl(`hero:${dir}:${frame}`, art, HERO_PAL)
+  const body = dir === 'up' ? BODY_UP : dir === 'down' ? BODY_DOWN : BODY_LEFT
+  const bodyArt = [...body, ...legs]
+  // 下むき いがいは そうびの 左右を 入れかえる（うしろ姿・よこ姿）
+  const flip = dir !== 'down'
+  const side = (a: Art) => (flip ? mirror(a) : a)
+
+  const layers: Layer[] = []
+  const shieldArt = SHIELD_ART[look.shield]
+  const shieldPal = SHIELD_PAL[look.shield]
+  const front = dir === 'down' // たてが 体の 手前に 見えるか
+  if (shieldArt && shieldPal && !front) layers.push({ art: side(shieldArt), pal: shieldPal })
+  layers.push({ art: bodyArt, pal: bodyPal(look) })
+  if (shieldArt && shieldPal && front) layers.push({ art: shieldArt, pal: shieldPal })
+  const weaponArt = WEAPON_ART[look.weapon]
+  const weaponPal = WEAPON_PAL[look.weapon]
+  if (weaponArt && weaponPal) layers.push({ art: side(weaponArt), pal: weaponPal })
+
+  // みぎむきは ぜんぶ かさねてから 左右反転する
+  const flipAll = dir === 'right'
+  const final = flipAll ? layers.map((l) => ({ art: mirror(l.art), pal: l.pal })) : layers
+  return layersUrl(`hero:${dir}:${frame}:${lookKey(look)}`, final)
 }
 
 // ---- むらびと（NPC）：シルエットは 共通、色と ぼうしで 見分ける ----

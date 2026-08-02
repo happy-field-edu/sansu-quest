@@ -2,10 +2,14 @@ import { useGame } from '../game/store'
 import { playerStats } from '../game/logic'
 import { ITEMS } from '../data/items'
 import { SLOTS } from '../types'
+import Sprite from '../pixel/Sprite'
+import { heroUrl } from '../pixel/chars'
+import { heroLookOf } from '../pixel/heroLook'
 
 export default function Equip({ onBack }: { onBack: () => void }) {
   const { save, dispatch } = useGame()
   const stats = playerStats(save)
+  const look = heroLookOf(save) // そうびを かえると 見た目も かわる
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
@@ -20,7 +24,12 @@ export default function Equip({ onBack }: { onBack: () => void }) {
       {/* ステータス（そうびを変えるとリアルタイムで変わる） */}
       <div className="rounded-2xl border-2 border-indigo-500/40 bg-slate-900/80 p-4">
         <div className="flex items-center justify-around text-center">
-          <div className="text-5xl">🦸</div>
+          {/* そうびが 見た目に 出る ゆうしゃ（4ほうこう） */}
+          <div className="flex items-end gap-1">
+            {(['down', 'left', 'up', 'right'] as const).map((d) => (
+              <Sprite key={d} url={heroUrl(d, 0, look)} size={64} />
+            ))}
+          </div>
           <div>
             <p className="text-xs text-slate-400">レベル</p>
             <p className="font-dot text-2xl font-bold text-cyan-300">Lv.{stats.level}</p>

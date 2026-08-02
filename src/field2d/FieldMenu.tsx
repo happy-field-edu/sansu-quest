@@ -5,6 +5,9 @@ import { SLOTS } from '../types'
 import { STAGE_BY_ID } from '../data/worlds'
 import { ZONE_NAMES } from './config2d'
 import { Win, CommandList } from '../ui/Win'
+import Sprite from '../pixel/Sprite'
+import { heroUrl } from '../pixel/chars'
+import { heroLookOf } from '../pixel/heroLook'
 
 // ドラクエ風のメニューウィンドウ（Xキー／メニューボタンで開閉）。
 // レベル・HP・そうび一覧と、「そうびで ボスの問題数が へる」しくみを見せる。
@@ -23,6 +26,7 @@ export default function FieldMenu({
 }) {
   const { save } = useGame()
   const stats = playerStats(save)
+  const look = heroLookOf(save) // そうびが 見た目に 出る
   const stage = STAGE_BY_ID[stageId]
   const base = bossBaseOf(stageId)
   const required = bossRequiredFor(stageId, stats.power)
@@ -35,7 +39,10 @@ export default function FieldMenu({
         {/* ---- ゆうしゃの ステータス ---- */}
         <Win className="p-3">
           <div className="flex items-center justify-between border-b-2 border-white/60 pb-1">
-            <span className="text-yellow-200">ゆうしゃ</span>
+            <span className="flex items-center gap-2 text-yellow-200">
+              <Sprite url={heroUrl('down', 0, look)} size={48} />
+              ゆうしゃ
+            </span>
             <span className="text-sm">Lv.{stats.level}</span>
           </div>
           <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">

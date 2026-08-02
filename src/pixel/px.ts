@@ -76,6 +76,29 @@ export function artUrl(key: string, art: Art, pal: Pal, scale = DOT): string {
   return url
 }
 
+// 絵を なんまいか かさねて 1つの スプライトに する。
+// （ゆうしゃの からだ ＋ ぶき ＋ たて … のように そうびを かさねるのに つかう）
+export interface Layer {
+  art: Art
+  pal: Pal
+}
+
+export function layersUrl(key: string, layers: Layer[], scale = DOT): string {
+  const hit = urlCache.get(key)
+  if (hit) return hit
+  const w = Math.max(...layers.map((l) => Math.max(...l.art.map((r) => r.length)))) * scale
+  const h = Math.max(...layers.map((l) => l.art.length)) * scale
+  const cv = document.createElement('canvas')
+  cv.width = w
+  cv.height = h
+  const ctx = cv.getContext('2d')!
+  ctx.imageSmoothingEnabled = false
+  for (const l of layers) drawArt(ctx, l.art, l.pal, 0, 0, scale)
+  const url = cv.toDataURL()
+  urlCache.set(key, url)
+  return url
+}
+
 // 1マスぶんの ドット（scale倍）を ぬる ヘルパー
 export function px(ctx: CanvasRenderingContext2D, x: number, y: number, c: string, scale = DOT) {
   ctx.fillStyle = c
