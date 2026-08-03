@@ -51,12 +51,19 @@ export function bossRequiredFor(stageId: string, power: number): number {
 // ・村が おくに いくほど（学年が上がるほど）ダメージが 大きくなる
 // ・まもりが 0（防具なし）だと 一撃で たおされる
 // ・まもりが 高いほど ダメージが へって、ミスできる回数が ふえる
+// ミスできる 回数の 上限。これ以上 ミスできると 大ボスが 楽勝に なってしまうので、
+// どんなに ぼうぐを かためても ここで うちどめに する。
+export const BOSS_MAX_MISTAKES = 10
+
 export function bossMistakeDamage(stageId: string, def: number, maxHp: number): number {
   if (def <= 0) return maxHp // 防具なしは 一撃必殺！
   const grade = STAGE_BY_ID[stageId]?.grade ?? 1
   // 学年が上がるほど もとの ダメージが 大きい（1年:0.46 → 6年:1.01 ぶんの HP）
   const raw = (maxHp * (0.35 + 0.11 * grade)) / (1 + def / 8)
-  return Math.max(1, Math.min(maxHp, Math.ceil(raw)))
+  // ミスできる回数が BOSS_MAX_MISTAKES を こえないよう ダメージに 下限を もうける。
+  // （ミス回数 = ceil(HP/ダメージ) − 1 なので、ダメージ ≧ HP/(上限+1) なら こえない）
+  const minDamage = Math.ceil(maxHp / (BOSS_MAX_MISTAKES + 1))
+  return Math.max(1, minDamage, Math.min(maxHp, Math.ceil(raw)))
 }
 
 // あと何回 ミスできるか（0なら つぎの ミスで ゲームオーバー）
