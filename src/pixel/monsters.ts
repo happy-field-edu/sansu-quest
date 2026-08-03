@@ -136,33 +136,35 @@ const BAT: Art = withEyes(sym([
   '............',
 ]), 8, 8)
 
-// けもの：とがった耳＋鼻づら＋きば
-const BEAST: Art = withEyes(sym([
-  '............',
-  '..DD........',
-  '..DHD.......',
-  '..DHHD......',
-  '..DHHAD.....',
-  '..DHHAADDDDD',
-  '..DHHAAAAAAA',
-  '..DHAADDDDAA',
-  '..DHAADAAAAD',
-  '..DHAADAAAAD',
-  '..DHAADDDDAA',
-  '...DHAAAAAAA',
-  '....DHAAACCC',
-  '.....DHAACCC',
-  '.....DHAAWWW',
-  '.....DBAAAAA',
-  '....DBBAAAAA',
-  '...DBBAAAAAA',
-  '..DBBAAAAAAA',
-  '..DBAAAAAAAA',
-  '..DBADDBAAAA',
-  '..DBAD.DBAAA',
-  '..DDDD.DDDDD',
-  '............',
-]), 6, 7)
+// おおかみ：よこむき。とがった耳・長い鼻づら・きば・ふさふさの しっぽ。
+// 正面むきの まる顔だと「ネコ」に 見えてしまうので、
+// イヌ科と ひとめで わかる よこむきの シルエットに した。
+const BEAST: Art = withEye([
+  '........................',
+  '....DD.....DD...........',
+  '...DHAD...DHAD..........',
+  '...DHAAD.DHAAD..........',
+  '...DHHAADDHAAD..........',
+  '....DHHHAAAAAD..........',
+  '...DHHHAAAAAAD..........',
+  '..DHHHAAAAAAAD..........',
+  '.DHHAAAAAAAAAD.......DD.',
+  'DHAAAAAAAAAAAD......DBBD',
+  'DAWWAAAAAAAAAD.....DBBBD',
+  'DAWWAAAAAAAAAAD...DBBBBD',
+  '.DDAAAAAAAAAAAADDDBBBBD.',
+  '...DDDHAAAAAAAAAABBBBD..',
+  '......DHHAAAAAAAAABBD...',
+  '......DHHAAAAAAAAADD....',
+  '......DBBAAAAAAAAAD.....',
+  '......DBBAAAAAAAAAD.....',
+  '......DBBAAAAAAAAAD.....',
+  '......DHADDDDDDHAAD.....',
+  '......DHAD....DHAAD.....',
+  '......DBAD....DBAAD.....',
+  '......DDDD....DDDDD.....',
+  '........................',
+], 5, 6)
 
 // おばけ：ふわっと した からだ＋ぎざぎざの すそ
 const GHOST: Art = withEyes(sym([
@@ -430,41 +432,44 @@ const B_DRAGON: Art = withEye([
   '...........DDDDDD.DDDDDD........',
 ], 10, 8, true)
 
-// まおう（キング）：おうかん＋ひげ＋マント
+// まおう（キング）：おうかん＋ひげ＋えり＋そとに ひろがる マント。
+// 胴を しかくい かたまりに すると「顔＋ざぶとん」に 見えるので、
+// マント(かげ色B)を 下に むかって ひろげ、
+// えりの トリム(C)と りんかく(D)で うで・ローブ・マントを 切り分ける。
 const B_KING: Art = withEyes(sym([
   '................',
-  '.........C..C..C',
-  '.........CCCCCCC',
-  '........DCCCCCCC',
-  '........DHHCCCCC',
-  '........DDDDDDDD',
-  '.........DHHHAAA',
-  '.........DHDDDDD',
-  '.........DHDAAAA',
-  '.........DHDAAAA',
-  '.........DHDDDDD',
-  '.........DHAAAAA',
-  '.........DHAWWWW',
-  '..........DHAAAA',
-  '..........DWWWWW',
-  '...........DWWWW',
-  '.....DDDDDDDDDDD',
-  '....DHHHHHAAAAAA',
-  '...DHHHHAAAAAAAA',
-  '..DHHHAAACCCCCCC',
-  '..DHHAAAACCCCCCC',
-  '..DHAAAAAACCCCCC',
-  '..DHAAAAAAAAAAAA',
-  '..DBAAAAAAAAAAAA',
-  '..DBBAAAAAAAAAAA',
-  '..DBBBAAAAAAAAAA',
-  '..DBBBBBAAAAAAAA',
-  '...DBBBBBBBBBBBB',
-  '....DBBBBBBBBBBB',
-  '.....DDBBBBBBBBB',
-  '.......DDDDDDDDD',
   '................',
-]), 10, 7, true)
+  '.......C...C...C',
+  '.....DCCCCCCCCCC',
+  '.....DHCCCCCCCCC',
+  '.....DDDDDDDDDDD',
+  '......DHHHAAAAAA',
+  '......DHAAAAAAAA',
+  '......DHAAAAAAAA',
+  '......DHAAAAAAAA',
+  '......DHAAAAAAAA',
+  '......DHAAWWWWWW',
+  '.......DHWWWWWWW',
+  '.......DWWWWWWWW',
+  '........DWWWWWWW',
+  '......DDDDDDDDDD',
+  '.....DCCCCCCCCCC',
+  '....DDDDDDDDDDDD',
+  '...DBBDHHHAAAAAA',
+  '...DBBDHHAAAAAAA',
+  '..DBBBDHAAACCCCC',
+  '..DBBBDHAAACCCCC',
+  '..DBBBDHAAAAAAAA',
+  '.DBBBBDHAAAAAAAA',
+  '.DBBBBDHHAAAAAAA',
+  'DBBBBBDDHHAAAAAA',
+  'DBBBBBBDHHHAAAAA',
+  'DBBBBBBDDHHAAAAA',
+  'DBBBBBBBDDAAAAAA',
+  '.DBBBBBBBDAAAAAA',
+  '..DDBBBBBBBAAAAA',
+  '....DDDDDDDDDDDD',
+]), 9, 7, true)
 
 // まじん（デーモン）：大きなツノ＋きば＋つばさ
 const B_DEMON: Art = withEyes(sym([
