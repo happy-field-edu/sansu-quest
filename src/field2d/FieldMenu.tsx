@@ -1,5 +1,5 @@
 import { useGame } from '../game/store'
-import { playerStats, bossBaseOf, bossRequiredFor, bossMistakeDamage, bossMistakesLeft } from '../game/logic'
+import { playerStats, bossBaseOf, bossRequiredFor, bossMistakeDamage, bossMistakesLeft, BOSS_MIN_QUESTIONS, POWER_FULL } from '../game/logic'
 import { ITEMS } from '../data/items'
 import { SLOTS } from '../types'
 import { STAGE_BY_ID } from '../data/worlds'
@@ -72,7 +72,9 @@ export default function FieldMenu({
           <div className="mt-2 border-t-2 border-white/60 pt-2">
             <p className="text-xs text-slate-300">
               ちから（レベル＋こうげき）＝
-              <span className="font-dot mx-1 text-lg text-yellow-200">{stats.power}</span>
+              <span className="font-dot mx-1 text-lg text-yellow-200">
+                {stats.power}／{POWER_FULL}
+              </span>
             </p>
             <p className="mt-1 text-xs leading-relaxed">
               いまの村「{ZONE_NAMES[stageId]}」の 大ボスは{' '}
@@ -92,7 +94,7 @@ export default function FieldMenu({
               </p>
             )}
             <p className="mt-1 text-[11px] text-emerald-300">
-              つよい そうびを つけると ちからが 上がり、ボスの ひつような もんだいが もっと へるぞ！
+              ちからが {POWER_FULL}に とどくと、どの学年の 大ボスも {BOSS_MIN_QUESTIONS}問に なる！
               ぼうぐを つけると ミスできる 回数が ふえる。
             </p>
           </div>

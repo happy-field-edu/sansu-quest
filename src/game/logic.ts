@@ -39,12 +39,24 @@ export function bossBaseOf(stageId: string): number {
   return per * stage.grade
 }
 
-// 基準の半分を さいていラインにする（強くても これより下がらない）
-export const bossMinOf = (stageId: string): number => Math.ceil(bossBaseOf(stageId) / 2)
+// どんなに つよくなっても、大ボスは この問題数だけは こたえる（どの学年も おなじ）
+export const BOSS_MIN_QUESTIONS = 25
+// ちからが ここまで とどくと 25問に なる（＝フル装備の めやす）。
+// そうびの こうげき力は ぜんぶ そろえて 26、そこに レベル34ぶんで 60。
+export const POWER_FULL = 60
 
-// power を引いた、じっさいに たおすのに ひつような正解数
+export const bossMinOf = (stageId: string): number => Math.min(BOSS_MIN_QUESTIONS, bossBaseOf(stageId))
+
+// じっさいに たおすのに ひつような正解数。
+// ちから0で 基準問題数、ちからが POWER_FULL に とどくと どの学年も 25問。
+// （まえは「基準 − ちから」の 引き算だったので、330問の 大ボスは
+//   ちからを 最大まで 上げても 255問 のこってしまい、げんじつ的で なかった）
 export function bossRequiredFor(stageId: string, power: number): number {
-  return Math.max(bossMinOf(stageId), bossBaseOf(stageId) - power)
+  const base = bossBaseOf(stageId)
+  const min = bossMinOf(stageId)
+  if (base <= min) return base
+  const t = Math.min(1, Math.max(0, power) / POWER_FULL)
+  return Math.max(min, Math.round(base - (base - min) * t))
 }
 
 // ---- 大ボスの こうげき力（ミスしたとき へるHP） ----

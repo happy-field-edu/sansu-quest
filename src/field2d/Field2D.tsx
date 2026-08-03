@@ -8,6 +8,8 @@ import {
   bossRequiredFor,
   bossMistakeDamage,
   bossMistakesLeft,
+  BOSS_MIN_QUESTIONS,
+  POWER_FULL,
   type SkillLevel,
 } from '../game/logic'
 import { WORLD_BY_ID, STAGE_BY_ID } from '../data/worlds'
@@ -622,10 +624,16 @@ export default function Field2D({
             <div className="mt-2 border-t-2 border-white/60 pt-2 text-xs leading-relaxed text-slate-200">
               <p>
                 たおすには 「{prepStage.title}」の もんだいに{' '}
-                <span className="text-yellow-200">
-                  {bossBaseOf(prepStage.id)}−Lv{stats.level}−そうび{stats.atk}＝{bossRequiredFor(prepStage.id, stats.power)}問
-                </span>{' '}
+                <span className="text-slate-400 line-through">{bossBaseOf(prepStage.id)}問</span>
+                <span className="mx-1 text-yellow-200">→ {bossRequiredFor(prepStage.id, stats.power)}問</span>
                 せいかい！
+              </p>
+              <p className="text-[11px] text-slate-300">
+                ちから（レベル＋こうげき）
+                <span className="mx-1 text-yellow-200">
+                  {stats.power}／{POWER_FULL}
+                </span>
+                — {POWER_FULL}まで 上げると どの大ボスも {BOSS_MIN_QUESTIONS}問に なる！
               </p>
               {/* 大ボスの こうげき力（防具なしは 一撃で やられる） */}
               {(() => {
