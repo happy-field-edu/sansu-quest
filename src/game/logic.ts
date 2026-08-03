@@ -51,19 +51,44 @@ export function bossRequiredFor(stageId: string, power: number): number {
 // ・村が おくに いくほど（学年が上がるほど）ダメージが 大きくなる
 // ・まもりが 0（防具なし）だと 一撃で たおされる
 // ・まもりが 高いほど ダメージが へって、ミスできる回数が ふえる
-// ミスできる 回数の 上限。これ以上 ミスできると 大ボスが 楽勝に なってしまうので、
-// どんなに ぼうぐを かためても ここで うちどめに する。
+// 1・2年生の 大ボスで ミスできる 回数の 上限。
+// これ以上 ミスできると（20〜60問しかないので）楽勝に なってしまう。
 export const BOSS_MAX_MISTAKES = 10
 
-export function bossMistakeDamage(stageId: string, def: number, maxHp: number): number {
+// 3年生からの 合格ライン。「だいたい 正答率85%」で クリアできる ように する。
+// 3年生いこうは 問題数が 100〜330問と とても 多いので、
+// ミスできる 回数を 問題数に あわせて ふやさないと
+// 「250問を 98%の 正確さで」という 人間ばなれした 要求に なってしまう。
+export const BOSS_PASS_RATE = 0.85
+// ぼうぐを ここまで そろえると 合格ライン（85%）まで ミスが ゆるされる
+const DEF_FULL = 30
+
+// 正答率が ちょうど 合格ライン(85%)に なる ミス回数（例：100問なら 17回）を
+// 上限に、まもりの 強さで そこまで のびる。
+function passLineMistakes(target: number, def: number): number {
+  const ceiling = Math.floor((target * (1 - BOSS_PASS_RATE)) / BOSS_PASS_RATE)
+  return Math.max(1, Math.round(ceiling * Math.min(1, def / DEF_FULL)))
+}
+
+// ミスしたとき へるHP。
+export function bossMistakeDamage(stageId: string, def: number, maxHp: number, target: number): number {
   if (def <= 0) return maxHp // 防具なしは 一撃必殺！
   const grade = STAGE_BY_ID[stageId]?.grade ?? 1
-  // 学年が上がるほど もとの ダメージが 大きい（1年:0.46 → 6年:1.01 ぶんの HP）
-  const raw = (maxHp * (0.35 + 0.11 * grade)) / (1 + def / 8)
-  // ミスできる回数が BOSS_MAX_MISTAKES を こえないよう ダメージに 下限を もうける。
-  // （ミス回数 = ceil(HP/ダメージ) − 1 なので、ダメージ ≧ HP/(上限+1) なら こえない）
-  const minDamage = Math.ceil(maxHp / (BOSS_MAX_MISTAKES + 1))
-  return Math.max(1, minDamage, Math.min(maxHp, Math.ceil(raw)))
+  if (grade <= 2) {
+    // 1・2年生は これまでどおり。学年が上がるほど ダメージが 大きく、
+    // まもりが 高いほど 小さくなる（ただし ミスは 10回まで）
+    const raw = (maxHp * (0.35 + 0.11 * grade)) / (1 + def / 8)
+    const minDamage = Math.ceil(maxHp / (BOSS_MAX_MISTAKES + 1))
+    return Math.max(1, minDamage, Math.min(maxHp, Math.ceil(raw)))
+  }
+  // 3年生からは 合格ライン(正答率85%)から ダメージを ぎゃく算する
+  return Math.max(1, Math.round(maxHp / (passLineMistakes(target, def) + 1)))
+}
+
+// その大ボスで 何回 ミスできるか（画面に 出る 回数と かならず 一致する）
+export function bossMistakesAllowed(stageId: string, def: number, maxHp: number, target: number): number {
+  if (def <= 0) return 0
+  return bossMistakesLeft(maxHp, bossMistakeDamage(stageId, def, maxHp, target))
 }
 
 // あと何回 ミスできるか（0なら つぎの ミスで ゲームオーバー）

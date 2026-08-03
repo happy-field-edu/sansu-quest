@@ -30,7 +30,7 @@ export default function FieldMenu({
   const stage = STAGE_BY_ID[stageId]
   const base = bossBaseOf(stageId)
   const required = bossRequiredFor(stageId, stats.power)
-  const dmg = bossMistakeDamage(stageId, stats.def, stats.maxHp)
+  const dmg = bossMistakeDamage(stageId, stats.def, stats.maxHp, required)
   const left = bossMistakesLeft(stats.maxHp, dmg)
 
   return (

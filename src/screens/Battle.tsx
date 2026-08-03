@@ -56,7 +56,7 @@ export default function Battle({
   // ミスしたときの ダメージ。大ボスは 村が おくに いくほど 強く、
   // 防具（まもり）が 0 なら 一撃で やられる。
   const missDamage = isBoss
-    ? bossMistakeDamage(stageId, startStats.def, startStats.maxHp)
+    ? bossMistakeDamage(stageId, startStats.def, startStats.maxHp, target)
     : startStats.mistakeDamage
   const oneShot = isBoss && startStats.def <= 0 // 防具なし＝一撃死
 

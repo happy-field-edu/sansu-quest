@@ -629,7 +629,7 @@ export default function Field2D({
               </p>
               {/* 大ボスの こうげき力（防具なしは 一撃で やられる） */}
               {(() => {
-                const dmg = bossMistakeDamage(prepStage.id, stats.def, stats.maxHp)
+                const dmg = bossMistakeDamage(prepStage.id, stats.def, stats.maxHp, bossRequiredFor(prepStage.id, stats.power))
                 const left = bossMistakesLeft(stats.maxHp, dmg)
                 return stats.def <= 0 ? (
                   <p className="mt-1 text-red-300">
