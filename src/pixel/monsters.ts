@@ -250,33 +250,6 @@ const BEAVER: Art = withEyes(sym([
   '....DDDDDDDD',
 ]), 5, 6)
 
-// チーター：よこむき。ほっそりした からだ＋ぶちもよう＋長い しっぽ
-const CHEETAH: Art = withEye([
-  '........................',
-  '..DD....DD..............',
-  '.DHAD..DHAD.............',
-  '.DHAADDHAAD.............',
-  '..DHHAAAAAD.............',
-  '..DHAAAAAAD.............',
-  '.DHAAAAAAAD.............',
-  'DHAAAAAAAAD......DDD....',
-  'DAWWAAAAAAD.....DBBD....',
-  'DAWWAAAAAADDDDDDBBBD....',
-  '.DDAAAAAAAAAAAAABBBD....',
-  '...DHAABAABAABAAADDD....',
-  '...DHAAAAAAAAAAAAD......',
-  '...DHAABAABAABAAD.......',
-  '...DHAAAAAAAAAAAD.......',
-  '...DBAAAAAAAAAAAD.......',
-  '...DBAAAAAAAAAAAD.......',
-  '...DHAADDDDDDHAAD.......',
-  '...DHAAD....DHAAD.......',
-  '...DBAAD....DBAAD.......',
-  '...DDDDD....DDDDD.......',
-  '........................',
-  '........................',
-  '........................',
-], 4, 5)
 
 // リス：よこむき。大きな ふさふさの しっぽ＋まえ歯
 const SQUIRREL: Art = withEye([
@@ -420,35 +393,6 @@ const CRAB: Art = withEyes(sym([
   '............',
 ]), 7, 8)
 
-// かめ：まん中に 頭、まわりに こうら。
-// こうらは かげ色(B)を ベースに アクセント(C)の もようを 入れて、
-// 頭（ひかり色）と 色が ぶつからない ように する。
-const TURTLE: Art = withEyes(sym([
-  '............',
-  '............',
-  '.......DDDDD',
-  '.......DHHAA',
-  '.......DHAAA',
-  '.......DHAAA',
-  '.....DDDHAAA',
-  '...DDBBBHAAA',
-  '..DBBBBBBDDD',
-  '.DBBCCCCBBBB',
-  'DBBCCCCCCCBB',
-  'DBCCCBBBCCCB',
-  'DBCCCBBBCCCB',
-  'DBBCCCCCCCBB',
-  'DBBBCCCCBBBB',
-  '.DBBBBBBBBBB',
-  '..DBBBBBBBBB',
-  '...DDDDDDDDD',
-  '....DHAD.DHA',
-  '....DBAD.DBA',
-  '....DDDD.DDD',
-  '............',
-  '............',
-  '............',
-]), 7, 3)
 
 // まほうつかい：とんがりぼうし＋つえ
 const MAGE: Art = withEyes(sym([
@@ -505,6 +449,121 @@ const FISH: Art = withEye([
   '........................',
   '........................',
 ], 4, 7)
+
+// チーター：よこむき。体を ひくく 長くして ネコ科の シルエットに。
+// （足が 長いと シカに 見えてしまう）
+const CHEETAH: Art = withEye([
+  '........................',
+  '........................',
+  '..DD....................',
+  '.DHAD...................',
+  '.DHAAD..................',
+  'DHHAAAD.................',
+  'DHAAAAD.........DDD.....',
+  'DAWWAAD........DBBBD....',
+  'DAWWAAADDDDDDDDBBBBD....',
+  '.DDAAAAAAAAAAAAABBBD....',
+  '..DHAAAAAAAAAAAAABBD....',
+  '..DHAABAABAABAAAABDD....',
+  '..DHAAAAAAAAAAAAAAD.....',
+  '..DHAABAABAABAAAAD......',
+  '..DBAAAAAAAAAAAAAD......',
+  '..DBBAAAAAAAAAAAAD......',
+  '..DHAADDDDDDDDHAAD......',
+  '..DHAAD......DHAAD......',
+  '..DBAAD......DBAAD......',
+  '..DDDDD......DDDDD......',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+], 2, 4)
+
+// かめ：まん中に 頭、まわりに こうら。
+// こうらは 板の わけめ(D)を 入れて ドームらしく 見せる。
+const TURTLE: Art = withEyes(sym([
+  '............',
+  '............',
+  '.......DDDDD',
+  '.......DHHAA',
+  '.......DHAAA',
+  '.......DHAAA',
+  '.....DDDHAAA',
+  '...DDBBBHAAA',
+  '..DBCCCCBDDD',
+  '.DBCCCCCCCBB',
+  'DBCCCDCCCDCB',
+  'DBCCCDCCCDCB',
+  'DBBDDDDDDDDB',
+  'DBBCCCDCCCCB',
+  'DBBCCCDCCCCB',
+  '.DBBBBBBBBBB',
+  '..DBBBBBBBBB',
+  '...DDDDDDDDD',
+  '....DHAD.DHA',
+  '....DBAD.DBA',
+  '....DDDD.DDD',
+  '............',
+  '............',
+  '............',
+]), 7, 3)
+
+// カタツムリ：うずまきの から＋やわらかい からだ＋つの。
+// （まえは カメの絵を つかっていて 名前と 合っていなかった）
+const SNAIL: Art = withEye([
+  '.C.........DDDDD........',
+  'DC.......DDCCCCCDD......',
+  '.DC.....DCCCCCCCCCD.....',
+  '..DC...DCCCDDDDDCCCD....',
+  '...DC..DCCDCCCCCDCCD....',
+  '....D..DCCDCDDDCDCCD....',
+  '.......DCCDCDCCDCCCD....',
+  '.......DCCDCDDDDCCCD....',
+  '.......DCCCDDDDDCCCD....',
+  '.DDDD..DCCCCCCCCCCCD....',
+  'DHHHHDDDCCCCCCCCCCD.....',
+  'DHAAAAADDCCCCCCCCD......',
+  'DHAAAAAAADDDDDDDD.......',
+  '.DAAAAAAAAAAAAAAD.......',
+  '..DHAAAAAAAAAAAAD.......',
+  '..DBBBBBBBBBBBBBD.......',
+  '...DDDDDDDDDDDDD........',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+], 1, 10)
+
+// カエル：あたまの うえに とび出した 目＋よこに 大きい 口＋うしろ足
+const FROG: Art = withEyes(sym([
+  '............',
+  '............',
+  '.......DDDDD',
+  '......DHHHAA',
+  '.....DHHHHAA',
+  '....DHHHHHAA',
+  '...DHHHHAAAA',
+  '..DHHHAAAAAA',
+  '..DHHAAAAAAA',
+  '..DHAAAAAAAA',
+  '..DHAADDDDDD',
+  '..DHAADWWWWW',
+  '..DHAADDDDDD',
+  '..DHAAAAAAAA',
+  '.DHHAAAAAAAA',
+  'DHHAAAAAAAAA',
+  'DHAAAAAAAAAA',
+  'DBAAAAAAAAAA',
+  'DBBAAAAAAAAA',
+  '.DBBBAAAAAAA',
+  '..DDBBBBBBBB',
+  'DHAD.DDDDDDD',
+  'DHAD........',
+  'DDDD........',
+]), 5, 3)
 
 // ---------------- 大ボス（左16ドット → 32×32） ----------------
 
@@ -907,10 +966,83 @@ const B_FOX: Art = withEye([
   '................................',
 ], 6, 7, true)
 
+// サイ：鼻づらの 大きな つの＋ぶあつい からだ（よこむき）
+const B_RHINO: Art = withEye([
+  '................................',
+  '................................',
+  '................................',
+  '.........C......................',
+  '........CC......................',
+  '.......CCC......................',
+  '......DDCDDDDDDDD...............',
+  '....DDHHHHHHHAAAAD..............',
+  '..DDHHHHHHHAAAAAAD.......DD.....',
+  '.DHHHHHHHHAAAAAAAD......DBBD....',
+  'DHHHHHHHAAAAAAAAAD.....DBBBD....',
+  'DAWWWWAAAAAAAAAAADDDDDDBBBBD....',
+  'DAWWWWAAAAAAAAAAAAAAAABBBBD.....',
+  '.DDAAAAAAAAAAAAAAAAAABBBBD......',
+  '...DDDHHAAAAAAAAAAAABBBD........',
+  '......DHHAAAAAAAAAAABDD.........',
+  '......DHHAAAAAAAAAAAD...........',
+  '......DBBAAAAAAAAAAAD...........',
+  '......DBBAAAAAAAAAAAD...........',
+  '......DBBAAAAAAAAAAAD...........',
+  '......DHADDDDDDDDHAAD...........',
+  '......DHAD.......DHAAD..........',
+  '......DBAD.......DBAAD..........',
+  '......DDDD.......DDDDD..........',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+], 8, 9, true)
+
+// クモ：まるい からだ＋8本の あし＋きば。
+// ※絵を まん中に よせないと 目が からだの そとに 出てしまう
+const B_SPIDER: Art = withEyes([
+  '................................',
+  '................................',
+  '................................',
+  '....D.....D..........D.....D....',
+  '.....D...D............D...D.....',
+  '.......D.D..............D.D.....',
+  '.......DD................DD.....',
+  '.......D..DDDDDDDDDDDD...D......',
+  '.......D.DHHHHHHHAAAAAD..D......',
+  '......DD.DHHHHHHAAAAAAD..DD.....',
+  '.....D..DHHHHHHAAAAAAAAD..D.....',
+  '.....D..DHHHHHAAAAAAAAAD..D.....',
+  '......D.DHHHHAAAAAAAAAAD.D......',
+  '.......DDHHHAAAAAAAAAAAD..D.....',
+  '.......D.DHAAAAAAAAAAAAD.D......',
+  '.......D.DHAAWWWWWWWWAAD.D......',
+  '......DD.DHAAAAAAAAAAAAD.DD.....',
+  '....D...DBAAAAAAAAAAAAD...D.....',
+  '....D...DBBAAAAAAAAAABD...D.....',
+  '......D..DBBBAAAAAAAABBD..D.....',
+  '.......D..DDBBBBBBBBBBD..D......',
+  '.......DD...DDDDDDDDDD..DD......',
+  '.........D...............D......',
+  '.......D.................D......',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+], 10, 11, true)
+
 // ---------------- かたちと 色の わりあて ----------------
 
-const SMALL: Record<string, Art> = { slime: SLIME, bug: BUG, bat: BAT, beast: BEAST, ghost: GHOST, snake: SNAKE, robot: ROBOT, bird: BIRD, crab: CRAB, turtle: TURTLE, mage: MAGE, fish: FISH, elephant: ELEPHANT, beaver: BEAVER, cheetah: CHEETAH, squirrel: SQUIRREL }
-const BIG: Record<string, Art> = { dragon: B_DRAGON, king: B_KING, demon: B_DEMON, kraken: B_KRAKEN, owl: B_OWL, whale: B_WHALE, golem: B_GOLEM, serpent: B_SERPENT, beast: B_BEAST, croc: B_CROC, fox: B_FOX }
+const SMALL: Record<string, Art> = { slime: SLIME, bug: BUG, bat: BAT, beast: BEAST, ghost: GHOST, snake: SNAKE, robot: ROBOT, bird: BIRD, crab: CRAB, turtle: TURTLE, mage: MAGE, fish: FISH, elephant: ELEPHANT, beaver: BEAVER, cheetah: CHEETAH, squirrel: SQUIRREL, snail: SNAIL, frog: FROG }
+const BIG: Record<string, Art> = { dragon: B_DRAGON, king: B_KING, demon: B_DEMON, kraken: B_KRAKEN, owl: B_OWL, whale: B_WHALE, golem: B_GOLEM, serpent: B_SERPENT, beast: B_BEAST, croc: B_CROC, fox: B_FOX, rhino: B_RHINO, spider: B_SPIDER }
 
 // 色セット [ひかり, 本体, かげ, りんかく, アクセント]
 // りんかくは まっ黒では なく その色を こくした 色に する（きつく 見えない ため）
@@ -948,10 +1080,10 @@ const LOOK: Record<string, { s: [string, string]; b: [string, string] }> = {
   'keisan-4': { s: ['ghost', 'white'], b: ['king', 'dark'] },
   'keisan-5': { s: ['snake', 'green'], b: ['kraken', 'purple'] },
   'keisan-6': { s: ['robot', 'cyan'], b: ['dragon', 'purple'] },
-  'ryou-1': { s: ['turtle', 'brown'], b: ['owl', 'brown'] },
-  'ryou-2': { s: ['slime', 'green'], b: ['croc', 'green'] },
-  'ryou-3': { s: ['elephant', 'gray'], b: ['golem', 'gray'] },
-  'ryou-4': { s: ['beaver', 'brown'], b: ['golem', 'brown'] },
+  'ryou-1': { s: ['snail', 'brown'], b: ['owl', 'brown'] },
+  'ryou-2': { s: ['frog', 'green'], b: ['croc', 'green'] },
+  'ryou-3': { s: ['elephant', 'gray'], b: ['rhino', 'gray'] },
+  'ryou-4': { s: ['beaver', 'brown'], b: ['beast', 'brown'] },
   'ryou-5': { s: ['turtle', 'green'], b: ['whale', 'blue'] },
   'ryou-6': { s: ['cheetah', 'yellow'], b: ['owl', 'orange'] },
   'zukei-1': { s: ['robot', 'orange'], b: ['golem', 'gray'] },
@@ -961,7 +1093,7 @@ const LOOK: Record<string, { s: [string, string]; b: [string, string] }> = {
   'zukei-5': { s: ['crab', 'red'], b: ['kraken', 'orange'] },
   'zukei-6': { s: ['ghost', 'cyan'], b: ['dragon', 'blue'] },
   'kankei-1': { s: ['squirrel', 'brown'], b: ['fox', 'orange'] },
-  'kankei-2': { s: ['bug', 'yellow'], b: ['crab', 'dark'] },
+  'kankei-2': { s: ['bug', 'yellow'], b: ['spider', 'dark'] },
   'kankei-3': { s: ['bird', 'green'], b: ['owl', 'blue'] },
   'kankei-4': { s: ['snake', 'yellow'], b: ['dragon', 'red'] },
   'kankei-5': { s: ['mage', 'blue'], b: ['king', 'purple'] },

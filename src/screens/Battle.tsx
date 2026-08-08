@@ -263,91 +263,91 @@ export default function Battle({
         />
       )}
       <div className="flex h-full w-full max-w-[520px] flex-col overflow-y-auto p-2">
-        {/* ---- 敵エリア（フロントビュー） ---- */}
+        {/* ---- 敵エリア（フロントビュー） ----
+            ゆうしゃは 手前、モンスターは おくに、おなじ 地面の うえに 立たせる。
+            まえは たて長の 画面だと 地面が 高さの28%に なって、
+            ゆうしゃだけ ずっと 下に はなれて 見えていた。 */}
         <div
-          className={`dq-frame relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-[#050510] ${
-            fx === 'miss' ? 'anim-shake-hard' : ''
-          }`}
-          /* ゆうしゃと モンスターが きちんと 入る 高さを かくほ する */
-          style={{ minHeight: isBoss ? 300 : 260 }}
+          className={`dq-frame relative overflow-hidden bg-[#050510] ${fx === 'miss' ? 'anim-shake-hard' : ''}`}
+          style={{ minHeight: isBoss ? 330 : 270 }}
         >
-          {/* 戦闘背景：よぞらと 地面（ワールドの 色に あわせる） */}
+          {/* 戦闘背景：よぞら */}
           <div
             className="pointer-events-none absolute inset-0 opacity-40"
             style={{ background: `radial-gradient(circle at 50% 35%, ${battleTheme.grass[1]} 0%, #05050f 72%)` }}
           />
+          {/* 地面（高さを px で 固定。地平線が いつも おなじ ばしょに くる） */}
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0"
             style={{
-              height: '28%',
+              height: 96,
               background: `linear-gradient(${battleTheme.grass[1]} 0 3px, ${battleTheme.grass[0]} 3px)`,
               opacity: 0.55,
             }}
           />
-          {/* ---- ゆうしゃ（そうびが 見た目に 出る） ----
-              せいかいで ふみこんで 切りつけ、ミスで のけぞる */}
-          <Sprite
-            url={heroUrl('right', fx === 'hit' ? 1 : 0, look)}
-            size={96}
-            className={`absolute bottom-1 left-1 z-20 ${
-              fx === 'hit' ? 'anim-hero-lunge' : fx === 'miss' ? 'anim-hero-hurt' : ''
-            }`}
-            style={{ filter: 'drop-shadow(2px 3px 0 rgba(0,0,0,0.55))' }}
-          />
-          <p className="font-dot z-10 text-sm text-slate-300">
-            {isBoss ? '👑 大ボスせん' : '⚔️ たたかい'}　EXP＋{expShown}　<span className="text-yellow-200">🪙＋{coinShown}</span>
-            {resumed && <span className="ml-2 text-yellow-200">▶つづきから</span>}
-          </p>
-          <div className="relative z-10 my-1 ml-16">
-            {/* モンスター本体（せいかいで 白く点滅しながら のけぞる） */}
+
+          {/* 見出しと のこり問題ゲージ（上に まとめる） */}
+          <div className="absolute inset-x-0 top-1 z-10 px-2">
+            <p className="font-dot text-center text-sm text-slate-300">
+              {isBoss ? '👑 大ボスせん' : '⚔️ たたかい'}　EXP＋{expShown}　<span className="text-yellow-200">🪙＋{coinShown}</span>
+              {resumed && <span className="ml-2 text-yellow-200">▶つづきから</span>}
+            </p>
+            <div className="mx-auto mt-1 w-2/3">
+              <div className="h-2.5 overflow-hidden rounded-full border border-white/50 bg-slate-900">
+                <div
+                  className={`h-full transition-all duration-500 ${isBoss ? 'bg-red-500' : 'bg-emerald-500'}`}
+                  style={{ width: `${(remaining / target) * 100}%` }}
+                />
+              </div>
+              <p className="font-dot mt-0.5 text-center text-xs text-yellow-200">あと {remaining} 問</p>
+            </div>
+          </div>
+
+          {/* モンスター（おくに 立つ）。※anim-* は transform を つかうので
+              いちの transform は かならず 外がわの div に かく */}
+          <div className="absolute z-10" style={{ bottom: 44, left: '60%', transform: 'translateX(-50%)' }}>
             <Sprite
               url={monsterUrl(stageId, isBoss)}
               size={monsterDots(isBoss) * 7}
-              className={`inline-block ${fx === 'hit' ? 'anim-damaged' : 'anim-floaty'}`}
+              className={`block ${fx === 'hit' ? 'anim-damaged' : 'anim-floaty'}`}
               style={{ filter: 'drop-shadow(3px 5px 0 rgba(0,0,0,0.5))' }}
             />
             {/* 斬撃エフェクト */}
             {fx === 'hit' && (
               <>
                 <div className="anim-flashfx pointer-events-none absolute inset-0 rounded-full bg-white" />
-                {/* 1本目の 斬撃 */}
                 <div
                   className="anim-slash-line pointer-events-none absolute top-1/2 left-1/2 h-2.5 w-48 rounded-full bg-gradient-to-r from-transparent via-white to-transparent"
                   style={{ ['--slash-rot' as string]: '-35deg', filter: 'drop-shadow(0 0 8px #fff)' }}
                 />
-                {/* 2本目（すこし おくれて 反対むき） */}
                 <div
                   className="anim-slash-line pointer-events-none absolute top-1/2 left-1/2 h-2 w-40 rounded-full bg-gradient-to-r from-transparent via-yellow-200 to-transparent"
                   style={{ ['--slash-rot' as string]: '28deg', animationDelay: '0.1s', filter: 'drop-shadow(0 0 8px #fde047)' }}
                 />
-                {/* きらめき */}
                 <div
                   className="anim-slash-burst pointer-events-none absolute top-1/2 left-1/2 h-24 w-24"
-                  style={{
-                    background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(253,224,71,0.5) 35%, transparent 70%)',
-                  }}
+                  style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(253,224,71,0.5) 35%, transparent 70%)' }}
                 />
-                {/* ダメージ表示 */}
                 <div className="anim-popup pointer-events-none absolute -top-2 left-1/2 text-2xl">💥</div>
               </>
             )}
-            {/* ミスのとき ゆうしゃが ダメージ */}
             {fx === 'miss' && (
               <div className="anim-popup font-dot pointer-events-none absolute -top-2 left-1/2 text-xl whitespace-nowrap text-red-400">
                 −{missDamage}
               </div>
             )}
           </div>
-          {/* のこり問題ゲージ */}
-          <div className="z-10 ml-16 w-1/2">
-            <div className="h-2.5 overflow-hidden rounded-full border border-white/50 bg-slate-900">
-              <div
-                className={`h-full transition-all duration-500 ${isBoss ? 'bg-red-500' : 'bg-emerald-500'}`}
-                style={{ width: `${(remaining / target) * 100}%` }}
-              />
-            </div>
-            <p className="font-dot mt-0.5 text-center text-xs text-yellow-200">あと {remaining} 問</p>
-          </div>
+
+          {/* ゆうしゃ（手前に 立つ）。そうびが 見た目に 出る。
+              せいかいで ふみこんで 切りつけ、ミスで のけぞる */}
+          <Sprite
+            url={heroUrl('right', fx === 'hit' ? 1 : 0, look)}
+            size={96}
+            className={`absolute bottom-1 left-2 z-20 ${
+              fx === 'hit' ? 'anim-hero-lunge' : fx === 'miss' ? 'anim-hero-hurt' : ''
+            }`}
+            style={{ filter: 'drop-shadow(2px 3px 0 rgba(0,0,0,0.55))' }}
+          />
         </div>
 
         {/* ---- メッセージウィンドウ ---- */}
