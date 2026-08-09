@@ -279,6 +279,63 @@ const SQUIRREL: Art = withEye([
   '........................',
 ], 4, 5)
 
+// ピカリ：いなずまの トゲが 出た 光の たま。
+// （さかなの絵だと 名前と 合わない）
+const SPARK: Art = withEyes(sym([
+  '..........C.',
+  '.........CC.',
+  '........CC..',
+  '.......DDDDD',
+  '.C....DHHHAA',
+  '..C..DHHHAAA',
+  '...CDHHAAAAA',
+  '....DHAAAAAA',
+  '...DHAAAAAAA',
+  '..DHAAAAAAAA',
+  '..DHAAAAAAAA',
+  '..DHAAAAAAAA',
+  '..DHAAAAAAAA',
+  '..DBAAAAAAAA',
+  '...DBAAAAAAA',
+  '....DBAAAAAA',
+  '...C.DBAAAAA',
+  '..C...DBBBBB',
+  '.C.....DDDDD',
+  'C...........',
+  '............',
+  '............',
+  '............',
+  '............',
+]), 6, 8)
+
+// ミラー：手かがみ。かがみに かおが うつっている。
+const MIRROR: Art = withEyes(sym([
+  '............',
+  '......DDDDDD',
+  '....DDCCCCCC',
+  '...DCCHHHHAA',
+  '..DCHHHAAAAA',
+  '..DCHHAAAAAA',
+  '..DCHAAAAAAA',
+  '..DCHAAAAAAA',
+  '..DCHAAAAAAA',
+  '..DCHAAAAAAA',
+  '..DCHAAAAAAA',
+  '..DCHAAAAAAA',
+  '...DCHAAAAAA',
+  '....DCCAAAAA',
+  '.....DDCCCCC',
+  '.......DDDDD',
+  '.........DCC',
+  '.........DCC',
+  '.........DCC',
+  '........DCCC',
+  '........DDDD',
+  '............',
+  '............',
+  '............',
+]), 7, 6)
+
 // ---- 左右ひたいちでない ザコ（24幅を そのまま かく） ----
 
 // へび：とぐろ＋もちあげた 頭＋した
@@ -564,6 +621,64 @@ const FROG: Art = withEyes(sym([
   'DHAD........',
   'DDDD........',
 ]), 5, 3)
+
+// トカゲ：4本の あし＋ながく ほそく のびた しっぽ。
+// （しっぽを ほそ長く しないと チーターと 見分けが つかない）
+const LIZARD: Art = withEye([
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '..DDDD..................',
+  '.DHHHAD.................',
+  'DHHAAAAD................',
+  'DAWWAAAAD...............',
+  'DAAAAAAAADD.............',
+  '.DDAAAAAAAADDD..........',
+  '..DHAAAAAAAAAADDD.......',
+  '..DHAACAACAACAAAADDD....',
+  '..DBAAAAAAAAAAAAAAADD...',
+  '...DBBAAAAAAAAAAAAAAD...',
+  '....DDDBAAAAAAADDDDDD...',
+  '.....DHAD..DHAD.........',
+  '.....DHAD..DHAD.........',
+  '.....DDDD..DDDD.........',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+], 3, 5)
+
+// サソリ：まえに はさみ、うしろに ふしのある しっぽと どくばり。
+// （カニの絵だと しっぽが なくて 見分けが つかない）
+const SCORPION: Art = withEye([
+  '........................',
+  '........................',
+  '.....................C..',
+  '....................CD..',
+  '...................DCD..',
+  '..................DBBD..',
+  '..................DBD...',
+  'DD................DBD...',
+  'DHAD.............DBBD...',
+  'DHAAD...........DBBD....',
+  '.DHAADDDDDDDDDDBBBD.....',
+  '..DHHHHHAAAAAAAAAD......',
+  '..DHHHHAAAAAAAAAAD......',
+  'DD.DHHHAAAAAAAAAAD......',
+  'DHAD.DHAAAAAAAAAAD......',
+  'DHAAD.DDDDDDDDDDDD......',
+  '.DHAD.D..D..D..D........',
+  '..DD..D..D..D..D........',
+  '......D..D..D..D........',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+], 5, 11)
 
 // ---------------- 大ボス（左16ドット → 32×32） ----------------
 
@@ -1041,7 +1156,7 @@ const B_SPIDER: Art = withEyes([
 
 // ---------------- かたちと 色の わりあて ----------------
 
-const SMALL: Record<string, Art> = { slime: SLIME, bug: BUG, bat: BAT, beast: BEAST, ghost: GHOST, snake: SNAKE, robot: ROBOT, bird: BIRD, crab: CRAB, turtle: TURTLE, mage: MAGE, fish: FISH, elephant: ELEPHANT, beaver: BEAVER, cheetah: CHEETAH, squirrel: SQUIRREL, snail: SNAIL, frog: FROG }
+const SMALL: Record<string, Art> = { slime: SLIME, bug: BUG, bat: BAT, beast: BEAST, ghost: GHOST, snake: SNAKE, robot: ROBOT, bird: BIRD, crab: CRAB, turtle: TURTLE, mage: MAGE, fish: FISH, elephant: ELEPHANT, beaver: BEAVER, cheetah: CHEETAH, squirrel: SQUIRREL, snail: SNAIL, frog: FROG, lizard: LIZARD, scorpion: SCORPION, spark: SPARK, mirror: MIRROR }
 const BIG: Record<string, Art> = { dragon: B_DRAGON, king: B_KING, demon: B_DEMON, kraken: B_KRAKEN, owl: B_OWL, whale: B_WHALE, golem: B_GOLEM, serpent: B_SERPENT, beast: B_BEAST, croc: B_CROC, fox: B_FOX, rhino: B_RHINO, spider: B_SPIDER }
 
 // 色セット [ひかり, 本体, かげ, りんかく, アクセント]
@@ -1089,15 +1204,15 @@ const LOOK: Record<string, { s: [string, string]; b: [string, string] }> = {
   'zukei-1': { s: ['robot', 'orange'], b: ['golem', 'gray'] },
   'zukei-2': { s: ['robot', 'yellow'], b: ['dragon', 'green'] },
   'zukei-3': { s: ['slime', 'blue'], b: ['kraken', 'red'] },
-  'zukei-4': { s: ['crab', 'purple'], b: ['serpent', 'green'] },
+  'zukei-4': { s: ['scorpion', 'purple'], b: ['serpent', 'green'] },
   'zukei-5': { s: ['crab', 'red'], b: ['kraken', 'orange'] },
-  'zukei-6': { s: ['ghost', 'cyan'], b: ['dragon', 'blue'] },
+  'zukei-6': { s: ['mirror', 'cyan'], b: ['dragon', 'blue'] },
   'kankei-1': { s: ['squirrel', 'brown'], b: ['fox', 'orange'] },
   'kankei-2': { s: ['bug', 'yellow'], b: ['spider', 'dark'] },
   'kankei-3': { s: ['bird', 'green'], b: ['owl', 'blue'] },
-  'kankei-4': { s: ['snake', 'yellow'], b: ['dragon', 'red'] },
+  'kankei-4': { s: ['lizard', 'yellow'], b: ['dragon', 'red'] },
   'kankei-5': { s: ['mage', 'blue'], b: ['king', 'purple'] },
-  'kankei-6': { s: ['fish', 'cyan'], b: ['demon', 'purple'] },
+  'kankei-6': { s: ['spark', 'cyan'], b: ['demon', 'purple'] },
 }
 
 const FALLBACK = { s: ['slime', 'green'] as [string, string], b: ['dragon', 'red'] as [string, string] }
