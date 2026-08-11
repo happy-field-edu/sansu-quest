@@ -23,8 +23,18 @@ const sym = (half: Art): Art => half.map((r) => r + [...r].reverse().join(''))
 // 目を 絵の中に 直接 かくと、左右対称の モンスターでは
 // 鏡にした とき まん中で くっついて「一本の 帯」に 見えてしまう。
 // そこで 目だけ 別に もっておき、きまった いちに 焼きこむ。
-const EYE: Art = ['DEED', 'EGPE', 'EPPE', 'DEED']
-const EYE_BIG: Art = ['DEEED', 'EGPPE', 'EPPPE', 'EPPPE', 'DEEED']
+// 目は 大きいほど かわいく 見える。白目(E)は のこす。
+// （くろ目だけに すると、体の 色が こい モンスターで 目が きえてしまう）
+// ハイライト(G)は くろ目の 中に すっぽり 入れる。白目に くっつけると
+// 白目と つながって しまい、くろ目が ななめに けずれて 見えてしまう。
+const EYE: Art = ['DEEED', 'EPPPE', 'EGPPE', 'EPPPE', 'DEEED']
+const EYE_BIG: Art = ['DEEEED', 'EPPPPE', 'EGGPPE', 'EGPPPE', 'EPPPPE', 'DEEEED']
+// 目を 大きく した ぶん、そのままだと 目と目の あいだが せまく なって
+// 一本の 帯（サングラス）に 見えてしまう。ふえた 幅の ぶん 外へ ずらす。
+const eyeShift = (eye: Art) => eye[0].length - 4
+
+// ほっぺ（かわいさの きめ手）。からだの 上だけ ぬるので はみ出さない。
+const BLUSH: Art = ['.KK.', 'KKKK', '.KK.']
 
 function stamp(art: Art, sprite: Art, x: number, y: number): Art {
   const out = art.map((r) => [...r])
@@ -39,15 +49,41 @@ function stamp(art: Art, sprite: Art, x: number, y: number): Art {
   return out.map((r) => r.join(''))
 }
 
-// 左右対称の かおに 目を 2つ（x は 左目の いち）
+// からだ(H/A/B)の うえだけ 色を のせる。はみ出した ぶんは ぬらない。
+// ほっぺが 体の そとに ういて しまうのを ふせぐ。
+function tint(art: Art, sprite: Art, x: number, y: number): Art {
+  const out = art.map((r) => [...r])
+  sprite.forEach((row, dy) => {
+    ;[...row].forEach((ch, dx) => {
+      if (ch === '.') return
+      const ry = y + dy
+      const rx = x + dx
+      const cur = out[ry]?.[rx]
+      if (cur === 'H' || cur === 'A' || cur === 'B') out[ry][rx] = ch
+    })
+  })
+  return out.map((r) => r.join(''))
+}
+
+// 左右対称の かおに 目を 2つ（x は 左目の いち）＋ その そと下に ほっぺ
 const withEyes = (art: Art, x: number, y: number, big = false): Art => {
   const eye = big ? EYE_BIG : EYE
   const w = art[0].length
-  return stamp(stamp(art, eye, x, y), eye, w - x - eye[0].length, y)
+  const lx = x - eyeShift(eye)
+  const rx = w - lx - eye[0].length
+  // ほっぺは 目の すぐ 下、すこし そと寄り。
+  // まったくの そとに おくと 顔から はみ出して 消えてしまう。
+  const by = y + eye.length - 1
+  let out = stamp(stamp(art, eye, lx, y), eye, rx, y)
+  out = tint(out, BLUSH, lx - 2, by)
+  out = tint(out, BLUSH, rx + eye[0].length - 2, by)
+  return out
 }
-// よこむきの モンスターに 目を 1つ
-const withEye = (art: Art, x: number, y: number, big = false): Art =>
-  stamp(art, big ? EYE_BIG : EYE, x, y)
+// よこむきの モンスターに 目を 1つ（ほっぺは その 下）
+const withEye = (art: Art, x: number, y: number, big = false): Art => {
+  const eye = big ? EYE_BIG : EYE
+  return tint(stamp(art, eye, x, y), BLUSH, x, y + eye.length)
+}
 
 
 // ---------------- ザコ（左12ドット → 24×24） ----------------
@@ -1166,13 +1202,17 @@ const COLORS: Record<string, [string, string, string, string, string]> = {
   blue: ['#8fd0ff', '#4a8ee6', '#2a5cae', '#16305f', '#ffe14a'],
   red: ['#ffa07a', '#e2573f', '#a32f28', '#5c1418', '#ffd24a'],
   purple: ['#d0a6f5', '#9a63d8', '#663aa2', '#341a58', '#ffe14a'],
-  gray: ['#dde2ea', '#a3abb8', '#6e7684', '#363c47', '#ffd24a'],
+  // ひかりを 白に 近づけすぎると 白目と 見分けが つかず、
+  // 目が かおに とけて しまうので すこし おとす
+  gray: ['#c6cedb', '#98a1b0', '#6a7280', '#363c47', '#ffd24a'],
   brown: ['#e0aa72', '#a8763f', '#734c22', '#3a2410', '#ffe14a'],
   yellow: ['#fff0a0', '#e8c33f', '#a8871c', '#5a4508', '#ff7a4a'],
   pink: ['#ffc4de', '#ee7fae', '#b44e7f', '#5e2340', '#fff0a0'],
   cyan: ['#a8f5ef', '#48c9c2', '#22908c', '#0e4746', '#ffe14a'],
   white: ['#ffffff', '#dfe6f2', '#a3aec2', '#525b6d', '#7fc7e8'],
-  dark: ['#9a8ec4', '#5d5480', '#3b3457', '#1b1730', '#ff5fa2'],
+  // くらい色は 画面の 背景(ほぼ黒)に とけて 手足が 見えなく なるので
+  // 全体を すこし 明るく する
+  dark: ['#b6a9e0', '#7a6ea8', '#4e4570', '#2b2447', '#ff5fa2'],
   orange: ['#ffcb8a', '#ef8f3d', '#b25c17', '#5e2e07', '#ffe14a'],
 }
 
@@ -1180,10 +1220,15 @@ function palOf(c: string): Pal {
   const [H, A, B, D, C] = COLORS[c] ?? COLORS.green
   return {
     H, A, B, D, C,
-    E: '#ffffff', // 白目
+    // 白目は まっ白に しない。ハイライト(G)が まっ白なので、
+    // 白目も まっ白だと ハイライトが とけこんで くろ目が けずれて 見え、
+    // 目つきの わるい「サングラス」みたいに なってしまう。
+    E: '#d9e2f2', // 白目
     P: '#241b30', // くろ目
     G: '#ffffff', // 目の ハイライト（これが あると 生きて 見える）
     W: '#fffdf2', // きば・歯
+    // ほっぺ。赤・ピンク・オレンジの からだでは うすい ピンクが きえるので こい色に する
+    K: c === 'pink' || c === 'red' || c === 'orange' ? '#c8447e' : '#ff8fb8',
   }
 }
 
